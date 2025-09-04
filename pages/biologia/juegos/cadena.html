@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Rompecabezas de la Cadena Alimenticia</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: "Arial", sans-serif;
+      background: linear-gradient(to top, #d1fae5, #e0f2fe);
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+    header {
+      background: #2563eb;
+      color: white;
+      padding: 1rem;
+    }
+    h1 { margin: 0.5rem 0; }
+    .pantalla {
+      display: none;
+      padding: 1rem;
+    }
+    .activo { display: block; }
+    .btn {
+      background: #16a34a;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      margin: 10px;
+      font-size: 16px;
+      transition: transform 0.2s;
+    }
+    .btn:hover { transform: scale(1.1); background: #15803d; }
+    .niveles {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+    .nivel {
+      background: #facc15;
+      border-radius: 12px;
+      padding: 20px;
+      width: 120px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: transform 0.2s;
+    }
+    .nivel:hover { transform: scale(1.1); background: #eab308; }
+    #zonaJuego {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin: 20px;
+      flex-wrap: wrap;
+    }
+    .slot {
+      width: 100px;
+      height: 100px;
+      border: 3px dashed #2563eb;
+      border-radius: 12px;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      transition: background 0.2s;
+    }
+    .pieza {
+      width: 100px;
+      height: 100px;
+      border-radius: 12px;
+      background: #f87171;
+      color: white;
+      font-size: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 10px;
+      cursor: grab;
+      user-select: none;
+      transition: transform 0.2s;
+    }
+    .pieza:active { cursor: grabbing; }
+    #fichas {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    #mensaje {
+      font-size: 20px;
+      font-weight: bold;
+      margin-top: 15px;
+    }
+    #explicacion {
+      margin-top: 15px;
+      padding: 1rem;
+      background: #fff7ed;
+      border-radius: 10px;
+      border: 2px solid #f59e0b;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🌿 Rompecabezas de la Cadena Alimenticia</h1>
+  </header>
+
+  <!-- Pantalla de inicio -->
+  <div id="intro" class="pantalla activo">
+    <h2>Concepto</h2>
+    <p>
+      La cadena alimenticia es el proceso por el cual la energía fluye desde los
+      <b>productores</b> hacia los <b>consumidores</b> y <b>descomponedores</b>.
+      Cada ser vivo ocupa un nivel trófico en este proceso.
+    </p>
+    <button class="btn" onclick="mostrarPantalla('niveles')">Comenzar</button>
+  </div>
+
+  <!-- Selección de niveles -->
+  <div id="niveles" class="pantalla">
+    <h2>Selecciona un nivel</h2>
+    <div class="niveles">
+      <div class="nivel" onclick="iniciarJuego(1)">Fácil</div>
+      <div class="nivel" onclick="iniciarJuego(2)">Intermedio</div>
+      <div class="nivel" onclick="iniciarJuego(3)">Difícil</div>
+    </div>
+    <button class="btn" onclick="mostrarPantalla('intro')">⬅ Volver</button>
+  </div>
+
+  <!-- Juego -->
+  <div id="juego" class="pantalla">
+    <h2 id="tituloNivel"></h2>
+    <div id="zonaJuego"></div>
+    <div id="fichas"></div>
+    <p id="mensaje"></p>
+    <div id="explicacion"></div>
+    <button class="btn" onclick="mostrarPantalla('niveles')">⬅ Volver a Niveles</button>
+  </div>
+
+  <script>
+    const niveles = {
+      1: ["🌱", "🐇", "🦊"],
+      2: ["🌱", "🐇", "🐍", "🦅"],
+      3: ["🌱", "🐛", "🐸", "🐍", "🦅", "🍄"]
+    };
+
+    const explicaciones = {
+      1: "🌱 La planta es el <b>productor</b>, 🐇 el conejo es un <b>consumidor primario</b> y 🦊 el zorro es un <b>consumidor secundario</b>.",
+      2: "🌱 La planta produce energía. 🐇 El conejo es consumidor primario. 🐍 La serpiente es consumidor secundario. 🦅 El águila es consumidor terciario.",
+      3: "🌱 La planta es el productor. 🐛 El insecto es consumidor primario. 🐸 La rana es consumidor secundario. 🐍 La serpiente es terciario. 🦅 El águila es un superdepredador. 🍄 El hongo es un descomponedor."
+    };
+
+    let nivelActual = 1;
+    let respuestas = [];
+
+    function mostrarPantalla(id) {
+      document.querySelectorAll(".pantalla").forEach(p => p.classList.remove("activo"));
+      document.getElementById(id).classList.add("activo");
+    }
+
+    function iniciarJuego(nivel) {
+      nivelActual = nivel;
+      respuestas = new Array(niveles[nivel].length).fill(null);
+      document.getElementById("tituloNivel").innerText = 
+        `Nivel ${nivel} – Ordena la cadena`;
+      const zona = document.getElementById("zonaJuego");
+      zona.innerHTML = "";
+      niveles[nivel].forEach((_, i) => {
+        const slot = document.createElement("div");
+        slot.className = "slot";
+        slot.dataset.index = i;
+        slot.ondrop = soltar;
+        slot.ondragover = permitir;
+        zona.appendChild(slot);
+      });
+
+      const fichas = document.getElementById("fichas");
+      fichas.innerHTML = "";
+      mezclar([...niveles[nivel]]).forEach((pieza, i) => {
+        const div = document.createElement("div");
+        div.className = "pieza";
+        div.innerText = pieza;
+        div.draggable = true;
+        div.id = "pieza" + i;
+        div.ondragstart = arrastrar;
+        div.addEventListener("touchstart", e => iniciarTouch(e, pieza));
+        div.addEventListener("touchend", finalizarTouch);
+        fichas.appendChild(div);
+      });
+
+      document.getElementById("mensaje").innerText = "";
+      document.getElementById("explicacion").style.display = "none";
+      mostrarPantalla("juego");
+    }
+
+    function mezclar(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function arrastrar(ev) {
+      ev.dataTransfer.setData("text", ev.target.innerText);
+    }
+
+    function permitir(ev) { ev.preventDefault(); }
+
+    function soltar(ev) {
+      ev.preventDefault();
+      const data = ev.dataTransfer.getData("text");
+      const index = ev.target.dataset.index;
+      if (!index) return;
+      ev.target.innerText = data;
+      respuestas[index] = data;
+      verificar();
+    }
+
+    // soporte táctil
+    let piezaSeleccionada = null;
+    function iniciarTouch(e, pieza) {
+      piezaSeleccionada = pieza;
+    }
+    function finalizarTouch(e) {
+      const touch = e.changedTouches[0];
+      const target = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (target && target.classList.contains("slot")) {
+        target.innerText = piezaSeleccionada;
+        respuestas[target.dataset.index] = piezaSeleccionada;
+        verificar();
+      }
+      piezaSeleccionada = null;
+    }
+
+    function verificar() {
+      if (respuestas.every(r => r !== null)) {
+        const correcto = JSON.stringify(respuestas) === JSON.stringify(niveles[nivelActual]);
+        if (correcto) {
+          document.getElementById("mensaje").innerText = "🎉 ¡Cadena correcta! Bien hecho.";
+          const exp = document.getElementById("explicacion");
+          exp.innerHTML = explicaciones[nivelActual];
+          exp.style.display = "block";
+        } else {
+          document.getElementById("mensaje").innerText = "❌ Algo no está en orden. Intenta de nuevo.";
+        }
+      }
+    }
+  </script>
+</body>
+</html>

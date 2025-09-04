@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Ecosistema Virtual</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to top, #b3e6b3, #e6ffe6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #2e7d32;
+      color: white;
+      width: 100%;
+      padding: 15px;
+      text-align: center;
+      font-size: 1.5em;
+    }
+
+    section {
+      display: none;
+      margin-top: 20px;
+      padding: 20px;
+      border-radius: 15px;
+      background: white;
+      width: 90%;
+      max-width: 600px;
+      box-shadow: 0px 4px 8px rgba(0,0,0,0.2);
+      text-align: center;
+    }
+
+    #inicio {
+      display: block;
+    }
+
+    .ecosistema-btn {
+      margin: 15px;
+      padding: 20px;
+      font-size: 1.2em;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform 0.2s;
+      width: 80%;
+      max-width: 300px;
+    }
+
+    .ecosistema-btn:hover {
+      transform: scale(1.05);
+    }
+
+    .bosque { background: #81c784; }
+    .sabana { background: #ffd54f; }
+    .oceano { background: #4fc3f7; }
+
+    #acciones button {
+      margin: 10px;
+      padding: 15px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    #acciones button:hover {
+      transform: scale(1.1);
+    }
+
+    #estado {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 10px;
+      font-weight: bold;
+      font-size: 1.2em;
+    }
+
+    #poblaciones {
+      margin-top: 15px;
+      font-size: 1.1em;
+    }
+
+    #mensaje {
+      margin-top: 15px;
+      font-style: italic;
+      color: #444;
+    }
+
+    #evento {
+      margin-top: 15px;
+      font-weight: bold;
+      color: #d84315;
+    }
+
+    .volver {
+      margin-top: 20px;
+      background: #2e7d32;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>🌍 Ecosistema Virtual</header>
+
+  <!-- Pantalla de inicio -->
+  <section id="inicio">
+    <h2>Elige tu Ecosistema</h2>
+    <button class="ecosistema-btn bosque" onclick="iniciarJuego('bosque')">🌲 Bosque</button>
+    <button class="ecosistema-btn sabana" onclick="iniciarJuego('sabana')">🦁 Sabana</button>
+    <button class="ecosistema-btn oceano" onclick="iniciarJuego('oceano')">🐟 Océano</button>
+  </section>
+
+  <!-- Pantalla de juego -->
+  <section id="juego">
+    <h2 id="ecosistemaTitulo"></h2>
+    <p>Mantén el ecosistema en equilibrio agregando productores, herbívoros y carnívoros.</p>
+
+    <div id="acciones"></div>
+
+    <div id="estado">Estado del ecosistema: 🟢 Saludable</div>
+    <div id="poblaciones"></div>
+    <div id="mensaje"></div>
+    <div id="evento"></div>
+
+    <button class="volver" onclick="volverMenu()">⬅ Volver al inicio</button>
+  </section>
+
+  <script>
+    let ecosistemaActual = "";
+    let poblacion = {};
+    let especies = {};
+    let turno = 0;
+
+    const ecosistemas = {
+      bosque: {
+        titulo: "🌲 Bosque",
+        productores: "Árboles 🌳",
+        herbivoros: "Conejos 🐇",
+        carnivoros: "Zorros 🦊",
+        inicial: { plantas: 5, herbivoros: 3, carnivoros: 2 }
+      },
+      sabana: {
+        titulo: "🦁 Sabana",
+        productores: "Pasto 🌾",
+        herbivoros: "Cebras 🦓",
+        carnivoros: "Leones 🦁",
+        inicial: { plantas: 6, herbivoros: 4, carnivoros: 2 }
+      },
+      oceano: {
+        titulo: "🐟 Océano",
+        productores: "Algas 🌿",
+        herbivoros: "Peces 🐠",
+        carnivoros: "Tiburones 🦈",
+        inicial: { plantas: 8, herbivoros: 5, carnivoros: 2 }
+      }
+    };
+
+    function iniciarJuego(tipo) {
+      ecosistemaActual = tipo;
+      especies = ecosistemas[tipo];
+      poblacion = { ...especies.inicial };
+      turno = 0;
+
+      document.getElementById("inicio").style.display = "none";
+      document.getElementById("juego").style.display = "block";
+
+      document.getElementById("ecosistemaTitulo").innerText = especies.titulo;
+
+      document.getElementById("acciones").innerHTML = `
+        <button onclick="agregar('plantas')">🌱 Añadir ${especies.productores}</button>
+        <button onclick="agregar('herbivoros')">🐇 Añadir ${especies.herbivoros}</button>
+        <button onclick="agregar('carnivoros')">🦊 Añadir ${especies.carnivoros}</button>
+      `;
+
+      actualizarEstado();
+    }
+
+    function volverMenu() {
+      document.getElementById("juego").style.display = "none";
+      document.getElementById("inicio").style.display = "block";
+    }
+
+    function agregar(tipo) {
+      poblacion[tipo]++;
+      turno++;
+      actualizarEstado();
+      eventoAleatorio();
+    }
+
+    function actualizarEstado() {
+      document.getElementById("poblaciones").innerHTML = `
+        ${especies.productores}: ${poblacion.plantas}<br>
+        ${especies.herbivoros}: ${poblacion.herbivoros}<br>
+        ${especies.carnivoros}: ${poblacion.carnivoros}
+      `;
+
+      let estado = document.getElementById("estado");
+      let mensaje = document.getElementById("mensaje");
+
+      if (poblacion.plantas < poblacion.herbivoros) {
+        estado.innerText = "Estado del ecosistema: 🔴 Colapsando";
+        estado.style.background = "#f28b82";
+        mensaje.innerText = "Hay demasiados herbívoros y no suficientes plantas.";
+      } else if (poblacion.herbivoros < poblacion.carnivoros) {
+        estado.innerText = "Estado del ecosistema: 🟠 Inestable";
+        estado.style.background = "#fdd663";
+        mensaje.innerText = "Demasiados carnívoros sin suficientes herbívoros.";
+      } else {
+        estado.innerText = "Estado del ecosistema: 🟢 Saludable";
+        estado.style.background = "#81c784";
+        mensaje.innerText = "El ecosistema está en equilibrio. ¡Bien hecho!";
+      }
+    }
+
+    function eventoAleatorio() {
+      let evento = document.getElementById("evento");
+      evento.innerText = "";
+
+      if (Math.random() < 0.3) { // 30% de probabilidad
+        let eventos = [
+          { nombre: "🌦️ Lluvia abundante", efecto: () => poblacion.plantas += 2 },
+          { nombre: "🔥 Incendio", efecto: () => poblacion.herbivoros = Math.max(0, poblacion.herbivoros - 2) },
+          { nombre: "☀️ Sequía", efecto: () => poblacion.plantas = Math.max(0, poblacion.plantas - 3) },
+          { nombre: "🎣 Sobrepesca", efecto: () => { if (ecosistemaActual === "oceano") poblacion.herbivoros = Math.max(0, poblacion.herbivoros - 3); } }
+        ];
+
+        let elegido = eventos[Math.floor(Math.random() * eventos.length)];
+        elegido.efecto();
+        evento.innerText = "Evento: " + elegido.nombre;
+        actualizarEstado();
+      }
+    }
+  </script>
+</body>
+</html>
+

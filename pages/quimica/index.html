@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Juegos de Química</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to top, #e1bee7, #f3e5f5);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      background: #6a1b9a;
+      color: white;
+      width: 100%;
+      padding: 20px;
+      text-align: center;
+      font-size: 1.8em;
+      font-weight: bold;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      padding: 30px;
+      width: 90%;
+      max-width: 1000px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      padding: 30px;
+      text-align: center;
+      transition: transform 0.2s;
+      cursor: pointer;
+    }
+
+    .card:hover {
+      transform: scale(1.05);
+    }
+
+    .card span {
+      font-size: 3em;
+      display: block;
+    }
+
+    .card h2 {
+      margin-top: 10px;
+      font-size: 1.2em;
+      color: #6a1b9a;
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+  </style>
+</head>
+<body>
+  <header>⚗️ Juegos de Química – 4to Secundaria</header>
+
+  <main>
+    <a href="construir.html">
+      <div class="card">
+        <span>⚛️</span>
+        <h2>Átomo Constructor</h2>
+      </div>
+    </a>
+
+    <a href="memoria.html">
+      <div class="card">
+        <span>🧩</span>
+        <h2>Memoria Tabla Periódica</h2>
+      </div>
+    </a>
+
+    <a href="enlaces.html">
+      <div class="card">
+        <span>🔗</span>
+        <h2>Enlaces Químicos</h2>
+      </div>
+    </a>
+
+    <a href="balanceo.html">
+      <div class="card">
+        <span>🔥</span>
+        <h2>Balanceo de Reacciones</h2>
+      </div>
+    </a>
+
+    <a href="quiz.html">
+      <div class="card">
+        <span>🎯</span>
+        <h2>Reto Final</h2>
+      </div>
+    </a>
+  </main>
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Quiz de Anatomía</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      background: linear-gradient(to bottom, #e0f7fa, #ffffff);
+      padding: 20px;
+      text-align: center;
+      margin: 0;
+    }
+    h1 {
+      color: #0d47a1;
+      font-size: 2.2em;
+    }
+    .sistemas {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 20px;
+      max-width: 700px;
+      margin: 30px auto;
+    }
+    .sistemas button {
+      font-size: 20px;
+      padding: 20px;
+      border: none;
+      border-radius: 15px;
+      cursor: pointer;
+      box-shadow: 2px 4px 10px rgba(0,0,0,0.2);
+      color: white;
+      font-weight: bold;
+      transition: transform 0.2s, background 0.3s;
+    }
+    .digestivo { background: #ef5350; }
+    .respiratorio { background: #42a5f5; }
+    .circulatorio { background: #fdd835; color: #000; }
+    .excretor { background: #66bb6a; }
+    .sistemas button:hover { transform: scale(1.08); }
+
+    #quiz { display: none; }
+    #pregunta {
+      font-size: 22px;
+      margin: 20px;
+      font-weight: bold;
+    }
+    .opcion {
+      display: block;
+      margin: 10px auto;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 12px;
+      background: #bbdefb;
+      cursor: pointer;
+      width: 85%;
+      font-size: 18px;
+      transition: background 0.3s, transform 0.2s;
+    }
+    .opcion:hover, .opcion:active {
+      background: #1e88e5;
+      color: white;
+      transform: scale(1.05);
+    }
+    #resultado { font-weight: bold; margin: 15px; font-size: 18px; }
+    #timer { font-size: 20px; color: #d32f2f; margin: 10px; }
+
+    #volver {
+      margin-top: 20px;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 12px;
+      background: #43a047;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      display: none;
+    }
+    #volver:hover { background: #1b5e20; }
+
+    /* Adaptación táctil */
+    @media (max-width: 600px) {
+      h1 { font-size: 1.8em; }
+      .sistemas button { font-size: 18px; padding: 16px; }
+      .opcion { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <h1>🧠 Quiz de Anatomía</h1>
+  
+  <!-- Pantalla de selección -->
+  <div id="seleccion">
+    <h2>Selecciona un sistema:</h2>
+    <div class="sistemas">
+      <button class="digestivo" onclick="iniciarQuiz('digestivo')">🍎 Digestivo</button>
+      <button class="respiratorio" onclick="iniciarQuiz('respiratorio')">🌬️ Respiratorio</button>
+      <button class="circulatorio" onclick="iniciarQuiz('circulatorio')">❤️ Circulatorio</button>
+      <button class="excretor" onclick="iniciarQuiz('excretor')">🚽 Excretor</button>
+    </div>
+  </div>
+
+  <!-- Pantalla del quiz -->
+  <div id="quiz">
+    <h2 id="pregunta"></h2>
+    <div id="opciones"></div>
+    <p id="timer"></p>
+    <p id="resultado"></p>
+    <button id="volver" onclick="volverMenu()">⬅️ Volver al menú</button>
+  </div>
+
+  <script>
+    // ---- Banco de preguntas ----
+    const preguntas = {
+      digestivo: [
+        { pregunta: "¿Dónde comienza la digestión de los carbohidratos?", opciones: ["Estómago","Boca","Intestino delgado","Hígado"], respuesta: 1 },
+        { pregunta: "¿Qué órgano produce la bilis?", opciones: ["Páncreas","Hígado","Vesícula","Estómago"], respuesta: 1 },
+        { pregunta: "¿Dónde ocurre la mayor absorción de nutrientes?", opciones: ["Boca","Estómago","Intestino delgado","Intestino grueso"], respuesta: 2 },
+        { pregunta: "¿Qué órgano almacena la bilis?", opciones: ["Hígado","Páncreas","Vesícula biliar","Estómago"], respuesta: 2 },
+        { pregunta: "¿Qué enzima está en la saliva?", opciones: ["Pepsina","Amilasa","Lipasa","Tripsina"], respuesta: 1 },
+        { pregunta: "¿Qué función cumple el estómago?", opciones: ["Absorción de agua","Producción de bilis","Digestión mecánica y química","Almacenar nutrientes"], respuesta: 2 },
+        { pregunta: "¿Qué conecta la boca con el estómago?", opciones: ["Tráquea","Intestino delgado","Esófago","Laringe"], respuesta: 2 },
+        { pregunta: "¿Qué órgano produce enzimas digestivas y regula el azúcar?", opciones: ["Estómago","Páncreas","Hígado","Bazo"], respuesta: 1 },
+        { pregunta: "¿Cómo se llama el movimiento que impulsa los alimentos en el tubo digestivo?", opciones: ["Difusión","Peristaltismo","Filtración","Osmosis"], respuesta: 1 },
+        { pregunta: "¿Qué parte del intestino absorbe agua?", opciones: ["Intestino delgado","Intestino grueso","Estómago","Faringe"], respuesta: 1 }
+      ],
+      respiratorio: [
+        { pregunta: "¿Cuál es el órgano principal de la respiración?", opciones: ["Corazón","Pulmones","Hígado","Estómago"], respuesta: 1 },
+        { pregunta: "¿Por dónde entra el aire?", opciones: ["Pulmones","Tráquea","Nariz y boca","Diafragma"], respuesta: 2 },
+        { pregunta: "¿Qué estructura evita que los alimentos pasen a la tráquea?", opciones: ["Epiglotis","Bronquios","Laringe","Lengua"], respuesta: 0 },
+        { pregunta: "¿Dónde ocurre el intercambio de oxígeno y dióxido de carbono?", opciones: ["Bronquios","Alvéolos","Tráquea","Diafragma"], respuesta: 1 },
+        { pregunta: "¿Qué músculo ayuda a la respiración?", opciones: ["Diafragma","Estómago","Hígado","Corazón"], respuesta: 0 },
+        { pregunta: "¿Cómo se llama la salida de aire de los pulmones?", opciones: ["Inspiración","Espiración","Ventilación","Exhalación"], respuesta: 1 },
+        { pregunta: "¿Qué gas necesitamos para vivir?", opciones: ["Oxígeno","Dióxido de carbono","Nitrógeno","Helio"], respuesta: 0 },
+        { pregunta: "¿Qué gas eliminamos al respirar?", opciones: ["Oxígeno","Dióxido de carbono","Nitrógeno","Ozono"], respuesta: 1 },
+        { pregunta: "¿Qué son los bronquios?", opciones: ["Conductos que llevan aire a los pulmones","Músculos de la respiración","Pequeñas vesículas de gas","Nervios pulmonares"], respuesta: 0 },
+        { pregunta: "¿Qué protege a los pulmones?", opciones: ["Hígado","Costillas","Diafragma","Clavícula"], respuesta: 1 }
+      ],
+      circulatorio: [
+        { pregunta: "¿Cuál es el órgano principal del sistema circulatorio?", opciones: ["Pulmones","Corazón","Hígado","Cerebro"], respuesta: 1 },
+        { pregunta: "¿Qué vasos llevan sangre del corazón al cuerpo?", opciones: ["Venas","Arterias","Capilares","Vénulas"], respuesta: 1 },
+        { pregunta: "¿Qué vasos llevan sangre al corazón?", opciones: ["Venas","Arterias","Capilares","Aorta"], respuesta: 0 },
+        { pregunta: "¿Cuál es la arteria más grande del cuerpo?", opciones: ["Pulmonar","Carótida","Aorta","Coronaria"], respuesta: 2 },
+        { pregunta: "¿Qué tipo de sangre transporta oxígeno?", opciones: ["Sangre venosa","Sangre arterial","Plasma","Linfática"], respuesta: 1 },
+        { pregunta: "¿Qué parte del corazón bombea la sangre al cuerpo?", opciones: ["Aurícula derecha","Ventrículo izquierdo","Aurícula izquierda","Ventrículo derecho"], respuesta: 1 },
+        { pregunta: "¿Qué células defienden al cuerpo de enfermedades?", opciones: ["Glóbulos rojos","Glóbulos blancos","Plaquetas","Plasma"], respuesta: 1 },
+        { pregunta: "¿Qué transportan los glóbulos rojos?", opciones: ["Oxígeno","Azúcar","Hormonas","Linfocitos"], respuesta: 0 },
+        { pregunta: "¿Qué hace la sangre?", opciones: ["Transporta nutrientes y oxígeno","Produce energía","Controla nervios","Forma músculos"], respuesta: 0 },
+        { pregunta: "¿Qué líquido transporta el sistema circulatorio?", opciones: ["Orina","Sangre","Bilis","Linfa"], respuesta: 1 }
+      ],
+      excretor: [
+        { pregunta: "¿Cuál es el órgano principal del sistema excretor?", opciones: ["Pulmones","Riñones","Hígado","Corazón"], respuesta: 1 },
+        { pregunta: "¿Qué líquido eliminan los riñones?", opciones: ["Sudor","Orina","Sangre","Plasma"], respuesta: 1 },
+        { pregunta: "¿Qué órgano almacena la orina?", opciones: ["Riñón","Vejiga","Uréteres","Hígado"], respuesta: 1 },
+        { pregunta: "¿Cómo se llaman los conductos que llevan la orina a la vejiga?", opciones: ["Uréteres","Uretra","Nefrones","Capilares"], respuesta: 0 },
+        { pregunta: "¿Cómo se llama el proceso de filtración en el riñón?", opciones: ["Peristaltismo","Diálisis","Filtración glomerular","Respiración"], respuesta: 2 },
+        { pregunta: "¿Qué órgano elimina el sudor?", opciones: ["Pulmones","Glándulas sudoríparas","Vejiga","Hígado"], respuesta: 1 },
+        { pregunta: "¿Qué sustancia tóxica eliminan los riñones?", opciones: ["Urea","Glucosa","Oxígeno","Proteínas"], respuesta: 0 },
+        { pregunta: "¿Qué órgano regula el agua y sales en el cuerpo?", opciones: ["Corazón","Riñones","Hígado","Estómago"], respuesta: 1 },
+        { pregunta: "¿Qué parte del riñón filtra la sangre?", opciones: ["Nefrona","Vejiga","Uréter","Uretra"], respuesta: 0 },
+        { pregunta: "¿Qué líquido produce el hígado y ayuda en la digestión pero también en la excreción?", opciones: ["Orina","Bilis","Plasma","Sudor"], respuesta: 1 }
+      ]
+    };
+
+    // ---- Variables ----
+    let sistemaActual = "";
+    let indice = 0;
+    let puntaje = 0;
+    let tiempo = 10;
+    let intervalo;
+
+    function iniciarQuiz(sistema) {
+      sistemaActual = sistema;
+      indice = 0;
+      puntaje = 0;
+      document.getElementById("seleccion").style.display = "none";
+      document.getElementById("quiz").style.display = "block";
+      document.getElementById("volver").style.display = "none";
+      mostrarPregunta();
+    }
+
+    function mostrarPregunta() {
+      if (indice >= preguntas[sistemaActual].length) {
+        finalizarQuiz();
+        return;
+      }
+      const q = preguntas[sistemaActual][indice];
+      document.getElementById("pregunta").innerText = q.pregunta;
+      const opcionesDiv = document.getElementById("opciones");
+      opcionesDiv.innerHTML = "";
+      q.opciones.forEach((op, i) => {
+        const btn = document.createElement("button");
+        btn.innerText = op;
+        btn.className = "opcion";
+        btn.onclick = () => verificar(i);
+        opcionesDiv.appendChild(btn);
+      });
+      document.getElementById("resultado").innerText = "";
+      iniciarTiempo();
+    }
+
+    function verificar(i) {
+      clearInterval(intervalo);
+      const q = preguntas[sistemaActual][indice];
+      if (i === q.respuesta) {
+        puntaje++;
+        document.getElementById("resultado").innerText = "✅ ¡Correcto!";
+      } else {
+        document.getElementById("resultado").innerText = "❌ Incorrecto";
+      }
+      indice++;
+      setTimeout(mostrarPregunta, 1000);
+    }
+
+    function iniciarTiempo() {
+      tiempo = 10;
+      document.getElementById("timer").innerText = "⏳ Tiempo: " + tiempo;
+      intervalo = setInterval(() => {
+        tiempo--;
+        document.getElementById("timer").innerText = "⏳ Tiempo: " + tiempo;
+        if (tiempo <= 0) {
+          clearInterval(intervalo);
+          indice++;
+          mostrarPregunta();
+        }
+      }, 1000);
+    }
+
+    function finalizarQuiz() {
+      document.getElementById("pregunta").innerText =
+        "Has completado el quiz. Puntaje: " + puntaje + "/" + preguntas[sistemaActual].length;
+      document.getElementById("opciones").innerHTML = "";
+      document.getElementById("timer").innerText = "";
+      document.getElementById("volver").style.display = "block";
+    }
+
+    function volverMenu() {
+      document.getElementById("quiz").style.display = "none";
+      document.getElementById("seleccion").style.display = "block";
+    }
+  </script>
+</body>
+</html>
+

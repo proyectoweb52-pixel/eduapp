@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>EDUAAP - Anatomía</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* Reset */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f1f8f4;
+      color: #1b5e20;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Encabezado Anatomía */
+    header {
+      background: linear-gradient(90deg, #2e7d32, #66bb6a);
+      color: #fff;
+      padding: 2rem 1rem;
+      text-align: center;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+    }
+
+    header h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      margin-bottom: 0.5rem;
+      text-shadow: 2px 2px 6px rgba(0,0,0,0.4);
+    }
+
+    header p {
+      font-size: 1.2rem;
+      opacity: 0.9;
+    }
+
+    /* Grid de tarjetas */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1.5rem;
+      padding: 2rem;
+      flex: 1;
+    }
+
+    /* Tarjetas verdes */
+    .card {
+      background: #a5d6a7;
+      color: #1b5e20;
+      border-radius: 16px;
+      padding: 2rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.3s ease;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.15);
+      user-select: none;
+      touch-action: manipulation;
+    }
+
+    .card:hover,
+    .card:active {
+      transform: scale(1.08);
+      box-shadow: 0 12px 25px rgba(0,0,0,0.25);
+    }
+
+    /* Íconos grandes */
+    .card .icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .card h2 {
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    /* Footer */
+    footer {
+      background: #1b5e20;
+      color: #fff;
+      padding: 1rem;
+      text-align: center;
+      margin-top: auto;
+    }
+
+    footer a {
+      color: #c8e6c9;
+      text-decoration: none;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <!-- Encabezado -->
+  <header>
+    <h1>🧬 Juegos de Anatomía</h1>
+    <p>Selecciona el juego que quieras abrir</p>
+  </header>
+
+  <!-- Juegos -->
+  <main class="grid">
+    <div class="card" onclick="location.href='juegos/quiz.html'">
+      <div class="icon">❓</div>
+      <h2>Quiz</h2>
+    </div>
+
+    <div class="card" onclick="location.href='juegos/arrastrar.html'">
+      <div class="icon">🖱️</div>
+      <h2>Arrastrar y Soltar</h2>
+    </div>
+
+    <div class="card" onclick="location.href='juegos/sopa.html'">
+      <div class="icon">🔤</div>
+      <h2>Sopa de Letras</h2>
+    </div>
+
+    <div class="card" onclick="location.href='juegos/michi.html'">
+      <div class="icon">❌⭕</div>
+      <h2>Michi</h2>
+    </div>
+
+    <div class="card" onclick="location.href='juegos/verbal.html'">
+      <div class="icon">🗣️</div>
+      <h2>Razonamiento Verbal</h2>
+    </div>
+
+    <div class="card" onclick="location.href='juegos/nutricion.html'">
+      <div class="icon">🌱</div>
+      <h2>Maestros de la Nutrición</h2>
+    </div>
+
+    <div class="card" onclick="location.href='juegos/dieta.html'">
+      <div class="icon">🍎</div>
+      <h2>Desafío de Nutrientes</h2>
+    </div>
+  </main>
+
+  <!-- Pie -->
+  <footer>
+    <a href="../cursos.html">← Volver a Cursos</a>
+    <p>Santa Rosa de Mayobamba</p>
+  </footer>
+</body>
+</html>
+
+
+
+
+
+

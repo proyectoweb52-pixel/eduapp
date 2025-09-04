@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cursos - EduApp</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f0f8ff;
+      text-align: center;
+    }
+
+    header {
+      background: #4CAF50;
+      color: white;
+      padding: 20px;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    footer {
+      background: #333;
+      color: white;
+      padding: 15px;
+      margin-top: 20px;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      padding: 30px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      padding: 20px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .card:hover {
+      transform: scale(1.05);
+    }
+
+    .card img {
+      width: 120px;
+      height: 120px;
+      object-fit: contain;
+      margin-bottom: 15px;
+    }
+
+    .card h2 {
+      font-size: 20px;
+      margin: 0;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    🌟 EduApp: Ciencias Divertidas 🌟 <br>
+    <small>Haz clic en el curso que más te interese</small>
+  </header>
+
+  <div class="container">
+    <!-- Curso Ciencia y Tecnología -->
+    <div class="card" onclick="location.href='ciencia/index.html'">
+      <img src="../img/ciencia.png" alt="Ciencia y Tecnología">
+      <h2>Ciencia y Tecnología</h2>
+    </div>
+
+    <!-- Curso Biología -->
+    <div class="card" onclick="location.href='biologia/index.html'">
+      <img src="../img/biologia.png" alt="Biología">
+      <h2>Biología</h2>
+    </div>
+
+    <!-- Curso Anatomía -->
+    <div class="card" onclick="location.href='anatomia/index.html'">
+      <img src="../img/anatomia.png" alt="Anatomía">
+      <h2>Anatomía</h2>
+    </div>
+
+    <!-- Curso Química -->
+    <div class="card" onclick="location.href='quimica/index.html'">
+      <img src="../img/quimica.png" alt="Química">
+      <h2>Química</h2>
+    </div>
+  </div>
+
+  <footer>
+    © Santa Rosa de Mayobamba - Proyecto EduApp
+  </footer>
+
+</body>
+</html>
+
+
+
+

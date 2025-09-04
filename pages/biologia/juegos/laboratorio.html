@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Explorador de Células — 4º Secundaria</title>
+<style>
+  :root{
+    --bg1:#d4fc79; --bg2:#96e6a1;      /* fondo */
+    --ink:#083344; --muted:#335b50;    /* texto */
+    --card:#ffffffd8; --stroke:#ffffff80;
+    --accent:#10b981; --accent2:#22d3ee;
+    --danger:#ef4444; --ok:#22c55e;
+    --chip:#14532d; --chipText:#ecfdf5;
+    --glass:rgba(255,255,255,.25);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; font-family: "Poppins", system-ui, Arial, sans-serif; color:var(--ink);
+    background: radial-gradient(1200px 400px at 50% -200px, #ffffffaa, transparent),
+                linear-gradient(135deg, var(--bg1), var(--bg2));
+  }
+  header{
+    text-align:center; color:#fff; padding:18px 12px;
+    background: linear-gradient(180deg, rgba(0,0,0,.28), rgba(0,0,0,.12));
+    backdrop-filter: blur(6px);
+  }
+  header h1{ margin:.2rem 0; font-size:clamp(1.2rem, 3.4vw, 2.1rem) }
+  header p{ margin:0; opacity:.95 }
+  .wrap{ max-width:1200px; margin:0 auto; padding:16px }
+  /* Tarjetas de selección */
+  .grid{ display:grid; gap:16px; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); margin-top:10px }
+  .card{
+    background:var(--card); border:2px solid var(--stroke); border-radius:18px; padding:16px; position:relative;
+    box-shadow: 0 14px 32px rgba(0,0,0,.15); transition:.2s; overflow:hidden; isolation:isolate;
+  }
+  .card::after{
+    content:""; position:absolute; inset:auto -30% -30% auto; width:180px; height:180px; border-radius:50%;
+    background: radial-gradient(closest-side, #ffffffaa, transparent); transform: rotate(12deg);
+    filter: blur(8px); opacity:.5; pointer-events:none;
+  }
+  .card:hover{ transform: translateY(-4px); box-shadow: 0 18px 36px rgba(0,0,0,.22) }
+  .tag{ position:absolute; top:12px; right:12px; background:#064e3b; color:#ecfdf5; padding:.25rem .6rem; border-radius:999px; font-size:.78rem }
+  .card h3{ margin:.3rem 0 .2rem }
+  .card p{ margin:.1rem 0 .6rem; color:#134e4a }
+  .actions{ display:flex; gap:8px; flex-wrap:wrap }
+  .btn{
+    border:none; border-radius:12px; padding:10px 14px; font-weight:700; color:#fff; cursor:pointer; touch-action:manipulation;
+    background: linear-gradient(135deg, var(--accent), #059669);
+    box-shadow: 0 8px 18px rgba(5,150,105,.35); transition:.2s;
+  }
+  .btn:hover{ transform: translateY(-2px) scale(1.01) }
+  .btn.secondary{ background: linear-gradient(135deg, #06b6d4, #0ea5e9); box-shadow: 0 8px 18px rgba(14,165,233,.35) }
+  .btn.ghost{ background:#ffffffa8; color:#064e3b; border:2px solid var(--stroke) }
+  .row{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:10px 0 }
+
+  /* Vista juego */
+  .game{ display:none; gap:16px; grid-template-columns: 1.1fr .9fr; margin-top:12px }
+  @media (max-width: 980px){ .game{ grid-template-columns: 1fr } }
+  .stage, .panel{
+    background:var(--card); border:2px solid var(--stroke); border-radius:18px; padding:12px;
+    box-shadow: 0 14px 30px rgba(0,0,0,.15)
+  }
+  .hud{ display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:10px; margin-bottom:8px }
+  .pill{ background:#ffffffcc; border:2px solid var(--stroke); padding:6px 10px; border-radius:999px; font-weight:700; color:#0f766e }
+  .pill.warn{ color:#b91c1c }
+  .stage-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap }
+  .svgBox{
+    margin-top:8px; background: radial-gradient(1200px 300px at 50% -40%, #ffffffdd, transparent), #eafff7;
+    border-radius:14px; border:1px dashed #0ea5e980; padding:6px; position:relative; overflow:hidden
+  }
+  svg{ width:100%; height:auto; display:block; touch-action:none }
+  .ref-label{ fill:#064e3b; font-size:12px; opacity:0; transition:.2s; user-select:none }
+  .ref-show .ref-label{ opacity:.9 }
+
+  .drop{ fill:rgba(255,255,255,.001); stroke:#0ea5e980; stroke-dasharray:3 3; pointer-events:all }
+  .drop.hit{ filter: drop-shadow(0 0 .6rem rgba(34,197,94,.6)); stroke: #22c55e }
+  .drop.wrong{ filter: drop-shadow(0 0 .6rem rgba(239,68,68,.6)); stroke: #ef4444 }
+
+  .panel h2{ margin:.2rem 0 .4rem }
+  .chips{ display:flex; flex-wrap:wrap; gap:10px }
+  .chip{
+    background:var(--chip); color:var(--chipText); padding:10px 12px; border-radius:12px; font-weight:700; cursor:grab; touch-action:none;
+    box-shadow: 0 8px 14px rgba(0,0,0,.25); transition:.15s; user-select:none
+  }
+  .chip:active{ transform: scale(1.05) }
+  .chip.locked{ opacity:.35; cursor:not-allowed; filter: grayscale(1) }
+
+  .toast{
+    position:fixed; left:50%; bottom:20px; transform:translateX(-50%);
+    background:#052e1a; color:#d1fae5; padding:12px 16px; border-radius:12px; box-shadow: 0 12px 30px rgba(0,0,0,.35);
+    max-width:min(92vw, 760px); display:none; z-index:50;
+  }
+  .toast.show{ display:block; animation: slideUp .35s ease-out }
+  @keyframes slideUp{ from{ transform: translate(-50%, 20px); opacity:0 } to{ transform: translate(-50%,0); opacity:1 } }
+
+  footer{ text-align:center; padding:18px; font-weight:700; color:#134e4a }
+  footer a{ color:#134e4a; text-decoration:none }
+
+  /* Modal niveles */
+  .modal{ position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; align-items:center; justify-content:center; z-index:40 }
+  .modal .box{ background:#fff; border-radius:16px; padding:18px; max-width:520px; width:92%; text-align:center }
+  .levels{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin:10px 0 }
+  .lv{
+    width:108px; height:108px; border-radius:18px; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:22px; cursor:pointer;
+    background: linear-gradient(135deg, #34d399, #0ea5e9); color:#fff; box-shadow: 0 10px 22px rgba(14,165,233,.35)
+  }
+  .lv.lock{ background:#d1d5db; color:#6b7280; cursor:not-allowed; box-shadow:none }
+</style>
+</head>
+<body>
+<header>
+  <h1>🧫 Explorador de Células</h1>
+  <p>Elige célula y nivel. Arrastra cada orgánulo al lugar correcto. ¡Modo reto con tiempo, feedback y confeti! 🎉</p>
+</header>
+
+<div class="wrap">
+  <!-- Selección de célula -->
+  <section id="menu" class="grid">
+    <div class="card">
+      <span class="tag">Recomendado</span>
+      <h3>🐾 Célula Eucariota Animal</h3>
+      <p>Núcleo, RER/REL, Golgi, mitocondria, lisosoma, centriolos, membrana…</p>
+      <div class="actions">
+        <button class="btn" onclick="openLevels('animal')">Elegir nivel</button>
+        <button class="btn secondary" onclick="openLevels('animal', true)">Modo reto</button>
+      </div>
+    </div>
+    <div class="card">
+      <span class="tag">Verde & cloroplastos</span>
+      <h3>🌿 Célula Eucariota Vegetal</h3>
+      <p>Pared celular, cloroplasto, vacuola central, plasmodesmos, núcleo…</p>
+      <div class="actions">
+        <button class="btn" onclick="openLevels('vegetal')">Elegir nivel</button>
+        <button class="btn secondary" onclick="openLevels('vegetal', true)">Modo reto</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Vista de juego -->
+  <section id="game" class="game">
+    <div class="stage">
+      <div class="stage-head">
+        <div class="row">
+          <span class="pill">Célula: <b id="hudType">—</b></span>
+          <span class="pill">Nivel: <b id="hudLevel">—</b></span>
+          <span class="pill" id="hudProg">0/0</span>
+          <span class="pill warn" id="hudTimer" style="display:none;">⏱ 00:00</span>
+        </div>
+        <div class="row">
+          <button class="btn ghost" id="btnRef" onclick="toggleRef()">👁 Mostrar referencia</button>
+          <button class="btn" onclick="resetLevel()">🔄 Reiniciar</button>
+          <button class="btn" onclick="backToMenu()">🏠 Menú</button>
+        </div>
+      </div>
+      <div id="svgBox" class="svgBox"></div>
+    </div>
+
+    <aside class="panel">
+      <h2>Fichas de orgánulos</h2>
+      <p style="margin-top:-6px">Toca y arrastra; suelta en el destino correcto.</p>
+      <div id="chips" class="chips"></div>
+    </aside>
+  </section>
+</div>
+
+<!-- Modal de niveles -->
+<div id="levelsModal" class="modal" role="dialog" aria-modal="true">
+  <div class="box">
+    <h2 id="modalTitle">Selecciona nivel</h2>
+    <p id="modalHint">Básico (4), Intermedio (8), Avanzado (12).</p>
+    <div class="levels">
+      <div class="lv" id="lv1" onclick="startLevel(1)">1</div>
+      <div class="lv" id="lv2" onclick="startLevel(2)">2</div>
+      <div class="lv" id="lv3" onclick="startLevel(3)">3</div>
+    </div>
+    <div class="row" style="justify-content:center;margin-top:6px">
+      <button class="btn ghost" onclick="closeLevels()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast educativo -->
+<div id="toast" class="toast"></div>
+
+<footer>
+  <a href="../index.html">← Volver al índice de juegos</a>
+</footer>
+
+<script>
+/* ================================
+   1) Datos de organelos + definiciones por célula
+===================================*/
+const DATA = {
+  animal: {
+    title: "Célula Animal",
+    svg: drawAnimal,
+    refColor: "#0ea5e9",
+    organelos: [
+      ["Membrana plasmática","Límite celular que regula entrada y salida de sustancias."],
+      ["Núcleo","Contiene el ADN y coordina las funciones celulares."],
+      ["Nucleolo","Zona del núcleo que fabrica ARN ribosomal."],
+      ["Citoesqueleto","Red de fibras que da forma y permite transporte interno."],
+      ["Mitocondria","Genera ATP mediante respiración celular."],
+      ["Ribosomas","Sintetizan proteínas a partir de ARN mensajero."],
+      ["R.E. Rugoso","Síntesis y transporte de proteínas (con ribosomas)."],
+      ["R.E. Liso","Síntesis de lípidos y detoxificación."],
+      ["Aparato de Golgi","Modifica, empaqueta y distribuye proteínas."],
+      ["Lisosoma","Digestión intracelular de macromoléculas."],
+      ["Centriolos","Organizan microtúbulos durante división celular."],
+      ["Vesículas","Transporte de sustancias dentro/fuera de la célula."]
+    ]
+  },
+  vegetal: {
+    title: "Célula Vegetal",
+    svg: drawPlant,
+    refColor: "#22c55e",
+    organelos: [
+      ["Pared celular","Capa rígida de celulosa que da soporte y protección."],
+      ["Membrana plasmática","Límite celular semipermeable."],
+      ["Núcleo","Contiene el ADN y coordina funciones."],
+      ["Nucleolo","Produce ARN ribosomal."],
+      ["Cloroplasto","Realiza fotosíntesis (clorofila)."],
+      ["Vacuola central","Almacena agua y mantiene la turgencia."],
+      ["Mitocondria","Produce ATP por respiración celular."],
+      ["Ribosomas","Sintetizan proteínas."],
+      ["R.E. Rugoso","Síntesis/transporte de proteínas."],
+      ["R.E. Liso","Síntesis de lípidos y detoxificación."],
+      ["Aparato de Golgi","Modifica y exporta proteínas/lípidos."],
+      ["Plasmodesmos","Canales que comunican células vegetales."]
+    ]
+  }
+};
+
+/* ================================
+   2) Estado global
+===================================*/
+let currentType = null;    // 'animal' | 'vegetal'
+let currentLevel = 1;      // 1 básico (4), 2 intermedio (8), 3 avanzado (12)
+let challenge = false;     // modo reto con tiempo
+let placed = 0;            // cuántos correctos
+let totalTargets = 0;      // objetivos del nivel actual
+let timerId = null;        // setInterval
+let timeLeft = 0;          // segundos
+let drag = null;           // estado de arrastre manual (puntero)
+
+const menu = document.getElementById('menu');
+const game = document.getElementById('game');
+const svgBox = document.getElementById('svgBox');
+const chips = document.getElementById('chips');
+const hudType = document.getElementById('hudType');
+const hudLevel = document.getElementById('hudLevel');
+const hudProg  = document.getElementById('hudProg');
+const hudTimer = document.getElementById('hudTimer');
+const toastEl  = document.getElementById('toast');
+const levelsModal = document.getElementById('levelsModal');
+const modalTitle  = document.getElementById('modalTitle');
+
+/* ================================
+   3) UI: Menú y niveles
+===================================*/
+function openLevels(type, isChallenge=false){
+  currentType = type;
+  challenge   = !!isChallenge;
+  modalTitle.textContent = (type==='animal'?'🐾 Célula Animal':'🌿 Célula Vegetal') + (challenge?' — Modo reto':'');
+  levelsModal.style.display = 'flex';
+  // bloqueo de niveles (progreso local por célula + modo)
+  const key = `cellProgress_${type}_${challenge?'challenge':'normal'}`;
+  const prog = JSON.parse(localStorage.getItem(key) || '{"unlocked":1}');
+  for (let i=1;i<=3;i++){
+    const el = document.getElementById('lv'+i);
+    if (i<=prog.unlocked){ el.classList.remove('lock'); el.title = 'Disponible'; }
+    else { el.classList.add('lock'); el.title = 'Bloqueado: supera el nivel anterior'; }
+  }
+}
+
+function closeLevels(){ levelsModal.style.display='none'; }
+
+function startLevel(n){
+  // validar desbloqueo
+  const key = `cellProgress_${currentType}_${challenge?'challenge':'normal'}`;
+  const prog = JSON.parse(localStorage.getItem(key) || '{"unlocked":1}');
+  if (n>prog.unlocked) return; // bloqueado
+  currentLevel = n;
+  closeLevels();
+  initGame();
+}
+
+/* ================================
+   4) Juego
+===================================*/
+function initGame(){
+  // preparar HUD
+  hudType.textContent = DATA[currentType].title;
+  hudLevel.textContent = (currentLevel===1?'Básico':currentLevel===2?'Intermedio':'Avanzado');
+  placed = 0;
+  // seleccionar cuantos organelos
+  totalTargets = currentLevel===1?4 : currentLevel===2?8 : 12;
+  hudProg.textContent = `0/${totalTargets}`;
+  // tiempo (modo reto)
+  clearInterval(timerId);
+  if (challenge){
+    timeLeft = currentLevel===1?90 : currentLevel===2?120 : 150; // seg
+    hudTimer.style.display='inline-block';
+    hudTimer.textContent = "⏱ "+fmt(timeLeft);
+    timerId = setInterval(()=>{
+      timeLeft--; hudTimer.textContent="⏱ "+fmt(timeLeft);
+      if (timeLeft<=0){ clearInterval(timerId); lockAll(); showToast("⏳ Tiempo agotado. ¡Vuelve a intentarlo!"); }
+    },1000);
+  } else {
+    hudTimer.style.display='none';
+  }
+
+  // crear SVG de célula según tipo
+  svgBox.innerHTML = "";
+  const svg = DATA[currentType].svg(); // devuelve elemento <svg>
+  svgBox.appendChild(svg);
+  // generar chips
+  buildChips();
+  // mostrar vista
+  menu.style.display='none';
+  game.style.display='grid';
+  // ocultar referencia por defecto
+  svg.classList.remove('ref-show');
+  document.getElementById('btnRef').textContent = '👁 Mostrar referencia';
+}
+
+// formato mm:ss
+function fmt(s){ const m = Math.floor(s/60), r=s%60; return `${m.toString().padStart(2,'0')}:${r.toString().padStart(2,'0')}`; }
+
+/* ================================
+   5) Chips (arrastrables)
+===================================*/
+function buildChips(){
+  chips.innerHTML = "";
+  // tomar los organelos del dataset y recortar al totalTargets
+  const all = DATA[currentType].organelos.slice(0, totalTargets);
+  // mezclar
+  shuffle(all).forEach(([name, def])=>{
+    const c = document.createElement('div');
+    c.className = 'chip';
+    c.textContent = name;
+    c.dataset.name = name;
+    c.title = def;
+    chips.appendChild(c);
+    attachPointerDrag(c);
+  });
+}
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]] } return a }
+
+/* ================================
+   6) Drag táctil + mouse (Pointer Events)
+===================================*/
+function attachPointerDrag(el){
+  el.addEventListener('pointerdown', (ev)=>{
+    if (el.classList.contains('locked')) return;
+    ev.preventDefault();
+    el.setPointerCapture(ev.pointerId);
+    const rect = el.getBoundingClientRect();
+    drag = {
+      el,
+      dx: ev.clientX - rect.left,
+      dy: ev.clientY - rect.top,
+      ghost: makeGhost(el, rect)
+    };
+  });
+  el.addEventListener('pointermove', (ev)=>{
+    if (!drag || drag.el!==el) return;
+    const x = ev.clientX - drag.dx, y = ev.clientY - drag.dy;
+    drag.ghost.style.left = x+'px'; drag.ghost.style.top = y+'px';
+  });
+  el.addEventListener('pointerup', (ev)=>{
+    if (!drag || drag.el!==el) return;
+    const drop = getHitDrop(ev.clientX, ev.clientY);
+    if (drop && drop.dataset.key === el.dataset.name){
+      placeOK(drop, el);
+    } else {
+      // feedback incorrecto
+      if (drop){ drop.classList.add('wrong'); setTimeout(()=>drop.classList.remove('wrong'), 450); }
+      showToast("❌ No corresponde. Intenta otra zona.");
+    }
+    drag.ghost.remove(); drag=null;
+  });
+}
+function makeGhost(el, rect){
+  const g = el.cloneNode(true);
+  g.style.position='fixed'; g.style.left=rect.left+'px'; g.style.top=rect.top+'px';
+  g.style.zIndex=30; g.style.opacity=.92; g.style.cursor='grabbing';
+  g.style.transform='scale(1.03)';
+  document.body.appendChild(g); return g;
+}
+function getHitDrop(cx, cy){
+  // buscar elementos con clase drop dentro del SVG
+  const els = svgBox.querySelectorAll('.drop');
+  for (const d of els){
+    const r = d.getBoundingClientRect();
+    if (cx>=r.left && cx<=r.right && cy>=r.top && cy<=r.bottom) return d;
+  }
+  return null;
+}
+
+/* ================================
+   7) Colocar correcto + avance
+===================================*/
+function placeOK(drop, chip){
+  drop.classList.remove('wrong');
+  drop.classList.add('hit');
+  drop.setAttribute('data-filled','1');
+  // poner etiqueta visible en el svg (text asociado)
+  const label = svgBox.querySelector(`text[data-key="${drop.dataset.key}"]`);
+  if (label){ label.style.opacity=1; label.classList.add('ref-label'); }
+  // bloquear chip y estilizar
+  chip.classList.add('locked');
+  chip.style.filter = 'brightness(1.2)';
+  showToast(`✅ ${chip.dataset.name}: ${chip.title}`);
+  placed++; hudProg.textContent = `${placed}/${totalTargets}`;
+  if (placed>=totalTargets){
+    clearInterval(timerId);
+    confetti();
+    unlockNext();
+    setTimeout(()=>showToast("🎉 ¡Nivel superado!"), 250);
+  }
+}
+
+function lockAll(){
+  chips.querySelectorAll('.chip').forEach(c=>c.classList.add('locked'));
+}
+
+/* ================================
+   8) Persistencia de progreso (por célula y modo)
+===================================*/
+function unlockNext(){
+  const key = `cellProgress_${currentType}_${challenge?'challenge':'normal'}`;
+  const prog = JSON.parse(localStorage.getItem(key) || '{"unlocked":1}');
+  if (currentLevel<3 && prog.unlocked < currentLevel+1){
+    prog.unlocked = currentLevel+1;
+    localStorage.setItem(key, JSON.stringify(prog));
+  }
+}
+
+/* ================================
+   9) Botones HUD
+===================================*/
+function toggleRef(){
+  const svg = svgBox.querySelector('svg');
+  if (!svg) return;
+  const on = svg.classList.toggle('ref-show');
+  document.getElementById('btnRef').textContent = on? '👁 Ocultar referencia' : '👁 Mostrar referencia';
+}
+function resetLevel(){ initGame(); }
+function backToMenu(){
+  clearInterval(timerId);
+  game.style.display='none';
+  menu.style.display='grid';
+}
+
+/* ================================
+   10) Toast y confeti
+===================================*/
+function showToast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  setTimeout(()=>toastEl.classList.remove('show'), 2500);
+}
+function confetti(){
+  const n=140;
+  for(let i=0;i<n;i++){
+    const d=document.createElement('div');
+    d.style.position='fixed';
+    d.style.left=Math.random()*100+'vw';
+    d.style.top='-10px';
+    d.style.width='8px'; d.style.height='14px';
+    d.style.background=`hsl(${Math.random()*360},90%,60%)`;
+    d.style.transform=`rotate(${Math.random()*180}deg)`;
+    d.style.zIndex=60;
+    document.body.appendChild(d);
+    const t=1200+Math.random()*1800;
+    d.animate([{transform:`translateY(0) rotate(0)`},{transform:`translateY(110vh) rotate(${Math.random()*720}deg)`}],{duration:t,easing:'ease-in'});
+    setTimeout(()=>d.remove(), t+50);
+  }
+}
+
+/* ================================
+   11) SVG: Célula ANIMAL
+   (simplificado estilizado; zonas de drop con data-key)
+===================================*/
+function drawAnimal(){
+  const NS="http://www.w3.org/2000/svg";
+  const svg=document.createElementNS(NS,'svg');
+  svg.setAttribute('viewBox','0 0 800 520');
+
+  // fondo célula
+  const body = el('ellipse',{cx:400, cy:260, rx:320, ry:200, fill:'#e0fff5', stroke:'#0ea5e9', 'stroke-width':3, opacity:.95});
+  const mem  = el('ellipse',{cx:400, cy:260, rx:335, ry:215, fill:'none', stroke:'#0ea5e955', 'stroke-width':6, 'stroke-dasharray':'6 6'});
+  svg.append(body, mem);
+
+  // organelos ilustrativos
+  const mito1 = el('ellipse',{cx:540, cy:280, rx:55, ry:28, fill:'#fde68a', stroke:'#d97706', 'stroke-width':2});
+  const mito2 = el('ellipse',{cx:280, cy:340, rx:50, ry:25, fill:'#fde68a', stroke:'#d97706', 'stroke-width':2});
+  const golgi = el('rect',{x:520, y:150, width:120, height:40, rx:20, fill:'#f0abfc', stroke:'#a21caf', 'stroke-width':2});
+  const rer   = el('rect',{x:320, y:140, width:120, height:30, rx:8, fill:'#bae6fd', stroke:'#0284c7', 'stroke-width':2});
+  const rel   = el('rect',{x:320, y:175, width:100, height:22, rx:8, fill:'#cffafe', stroke:'#06b6d4', 'stroke-width':2});
+  const liso  = el('circle',{cx:210, cy:210, r:22, fill:'#fecaca', stroke:'#ef4444', 'stroke-width':2});
+  const ves   = el('circle',{cx:610, cy:350, r:16, fill:'#bbf7d0', stroke:'#16a34a', 'stroke-width':2});
+  const cent  = el('rect',{x:470, y:360, width:18, height:18, rx:4, fill:'#fde68a', stroke:'#ca8a04', 'stroke-width':2});
+  const nuc   = el('ellipse',{cx:400, cy:260, rx:90, ry:70, fill:'#e9d5ff', stroke:'#7c3aed', 'stroke-width':3});
+  const nucl  = el('circle',{cx:400, cy:260, r:18, fill:'#c4b5fd', stroke:'#7c3aed', 'stroke-width':2});
+  svg.append(mito1, mito2, golgi, rer, rel, liso, ves, cent, nuc, nucl);
+
+  // drops + labels
+  const drops = [
+    {key:'Membrana plasmática',   d: el('ellipse',{cx:400, cy:260, rx:335, ry:215}) , lx:560, ly:90},
+    {key:'Núcleo',                d: el('ellipse',{cx:400, cy:260, rx:90, ry:70})   , lx:410, ly:255},
+    {key:'Nucleolo',              d: el('circle', {cx:400, cy:260, r:18})           , lx:392, ly:265},
+    {key:'Citoesqueleto',         d: el('ellipse',{cx:400, cy:260, rx:300, ry:180}) , lx:120, ly:120},
+    {key:'Mitocondria',           d: el('ellipse',{cx:540, cy:280, rx:55, ry:28})   , lx:560, ly:300},
+    {key:'Ribosomas',             d: el('rect',   {x:320, y:140, width:120, height:30}) , lx:330, ly:135},
+    {key:'R.E. Rugoso',           d: el('rect',   {x:320, y:140, width:120, height:30}) , lx:330, ly:135},
+    {key:'R.E. Liso',             d: el('rect',   {x:320, y:175, width:100, height:22}) , lx:330, ly:200},
+    {key:'Aparato de Golgi',      d: el('rect',   {x:520, y:150, width:120, height:40}) , lx:530, ly:145},
+    {key:'Lisosoma',              d: el('circle', {cx:210, cy:210, r:22})                , lx:196, ly:205},
+    {key:'Centriolos',            d: el('rect',   {x:470, y:360, width:18, height:18})   , lx:466, ly:356},
+    {key:'Vesículas',             d: el('circle', {cx:610, cy:350, r:16})                , lx:600, ly:345}
+  ];
+  addDropsAndLabels(svg, drops, DATA.animal.refColor);
+  return svg;
+}
+
+/* ================================
+   12) SVG: Célula VEGETAL
+===================================*/
+function drawPlant(){
+  const NS="http://www.w3.org/2000/svg";
+  const svg=document.createElementNS(NS,'svg');
+  svg.setAttribute('viewBox','0 0 800 520');
+
+  // pared + membrana
+  const wall = el('rect',{x:100,y:60,width:600,height:400,rx:36, fill:'#eaffea', stroke:'#22c55e', 'stroke-width':6});
+  const mem  = el('rect',{x:115,y:75,width:570,height:370,rx:30, fill:'none', stroke:'#16a34a90', 'stroke-width':4, 'stroke-dasharray':'6 6'});
+  svg.append(wall, mem);
+
+  // organelos
+  const vac  = el('rect',{x:200,y:160,width:360,height:220,rx:28, fill:'#cffafe', stroke:'#06b6d4', 'stroke-width':2});
+  const chl1 = el('ellipse',{cx:220, cy:120, rx:55, ry:30, fill:'#bbf7d0', stroke:'#16a34a', 'stroke-width':2});
+  const chl2 = el('ellipse',{cx:570, cy:170, rx:50, ry:28, fill:'#bbf7d0', stroke:'#16a34a', 'stroke-width':2});
+  const mito = el('ellipse',{cx:520, cy:360, rx:50, ry:25, fill:'#fde68a', stroke:'#d97706', 'stroke-width':2});
+  const golg = el('rect',{x:300, y:120, width:120, height:36, rx:18, fill:'#f0abfc', stroke:'#a21caf', 'stroke-width':2});
+  const rer  = el('rect',{x:260, y:300, width:140, height:28, rx:10, fill:'#bae6fd', stroke:'#0284c7', 'stroke-width':2});
+  const rel  = el('rect',{x:260, y:335, width:120, height:22, rx:10, fill:'#cffafe', stroke:'#06b6d4', 'stroke-width':2});
+  const nuc  = el('ellipse',{cx:420, cy:240, rx:70, ry:54, fill:'#e9d5ff', stroke:'#7c3aed', 'stroke-width':3});
+  const nucl = el('circle',{cx:420, cy:240, r:16, fill:'#c4b5fd', stroke:'#7c3aed', 'stroke-width':2});
+  svg.append(vac, chl1, chl2, mito, golg, rer, rel, nuc, nucl);
+
+  // drops + labels
+  const drops = [
+    {key:'Pared celular',         d: el('rect',{x:100,y:60,width:600,height:400,rx:36}) , lx:96, ly:52},
+    {key:'Membrana plasmática',   d: el('rect',{x:115,y:75,width:570,height:370,rx:30}) , lx:118, ly:70},
+    {key:'Núcleo',                d: el('ellipse',{cx:420, cy:240, rx:70, ry:54})       , lx:420, ly:236},
+    {key:'Nucleolo',              d: el('circle', {cx:420, cy:240, r:16})               , lx:412, ly:244},
+    {key:'Cloroplasto',           d: el('ellipse',{cx:220, cy:120, rx:55, ry:30})       , lx:210, ly:110},
+    {key:'Vacuola central',       d: el('rect',   {x:200,y:160,width:360,height:220,rx:28}) , lx:206, ly:154},
+    {key:'Mitocondria',           d: el('ellipse',{cx:520, cy:360, rx:50, ry:25})       , lx:540, ly:362},
+    {key:'Ribosomas',             d: el('rect',   {x:260, y:300, width:140, height:28}) , lx:264, ly:296},
+    {key:'R.E. Rugoso',           d: el('rect',   {x:260, y:300, width:140, height:28}) , lx:264, ly:296},
+    {key:'R.E. Liso',             d: el('rect',   {x:260, y:335, width:120, height:22}) , lx:264, ly:356},
+    {key:'Aparato de Golgi',      d: el('rect',   {x:300, y:120, width:120, height:36}) , lx:304, ly:116},
+    {key:'Plasmodesmos',          d: el('rect',   {x:100,y:60,width:600,height:400,rx:36}) , lx:690, ly:440}
+  ];
+  addDropsAndLabels(svg, drops, DATA.vegetal.refColor);
+  return svg;
+}
+
+/* util crear elementos */
+function el(tag, attrs){ const NS="http://www.w3.org/2000/svg"; const n=document.createElementNS(NS,tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; }
+
+/* agregar zonas + etiquetas */
+function addDropsAndLabels(svg, arr, color){
+  arr.forEach(({key, d, lx, ly})=>{
+    d.classList.add('drop'); d.dataset.key = key;
+    d.setAttribute('fill','rgba(255,255,255,.001)');
+    d.setAttribute('stroke', color); d.setAttribute('stroke-dasharray','4 4');
+    svg.appendChild(d);
+    const t = el('text',{x:lx, y:ly, 'data-key':key, class:'ref-label', fill:color});
+    t.textContent = key;
+    svg.appendChild(t);
+  });
+}
+
+/* ================================
+   13) Inicial: mostrar menú
+===================================*/
+// listo
+
+</script>
+</body>
+</html>
+
+
+
