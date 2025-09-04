@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Tiro Parabólico – Simulador</title>
+<style>
+  :root{
+    --bg1:#e8f5e9; --bg2:#e3f2fd; --card:#ffffff;
+    --accent:#2e7d32; --accent2:#1976d2; --warn:#fbc02d;
+    --grid:#d6e9ff; --axis:#90caf9;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;
+    background:linear-gradient(180deg,var(--bg1),var(--bg2));
+    color:#123; display:flex; flex-direction:column; gap:12px;
+    min-height:100vh;
+  }
+  header{padding:14px 12px; text-align:center; color:#fff;
+    background:linear-gradient(90deg,var(--accent),#43a047)}
+  header h1{margin:0; font-size:clamp(1.2rem,4vw,1.8rem)}
+  .wrap{display:grid; gap:12px; padding:12px; max-width:1100px; margin:0 auto; width:100%;}
+  .panel{
+    background:var(--card); border-radius:16px; padding:12px;
+    box-shadow:0 10px 30px rgba(0,0,0,.08);
+  }
+  .controls{display:grid; gap:10px}
+  .row{display:grid; gap:10px; grid-template-columns:1fr; align-items:center}
+  .row label{font-weight:800}
+  .row .val{font-weight:900; color:var(--accent2)}
+  .slider{display:grid; grid-template-columns: 1fr auto; gap:8px; align-items:center}
+  input[type="range"]{width:100%}
+  .grid2{display:grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap:10px}
+  select, input[type="number"]{
+    width:100%; padding:10px; border-radius:10px; border:2px solid #d9e9ff; font-weight:700;
+  }
+  .buttons{display:flex; flex-wrap:wrap; gap:10px}
+  .btn{
+    padding:12px 16px; border:none; border-radius:12px; color:#fff; font-weight:900; cursor:pointer;
+    box-shadow:0 6px 14px rgba(0,0,0,.12); touch-action:manipulation;
+  }
+  .btn.play{background:var(--accent2)}
+  .btn.pause{background:#455a64}
+  .btn.reset{background:var(--accent)}
+  .btn.clear{background:var(--warn); color:#222}
+  .stats{display:grid; gap:6px; grid-template-columns: repeat(auto-fit,minmax(180px,1fr));}
+  .pill{background:#f3faff; border:2px solid #d9e9ff; padding:8px 10px; border-radius:12px; font-weight:800}
+  .canvasCard{padding:0; overflow:hidden}
+  #canvas{display:block; width:100%; height:52vh; background:#fff}
+  .legend{display:flex; gap:14px; align-items:center; padding:8px 12px}
+  .dot{width:14px; height:14px; border-radius:50%}
+  .dot.path{background:#1976d2} .dot.pred{background:#2e7d32}
+  footer{padding:10px; text-align:center; opacity:.8; font-size:.9rem}
+  @media (min-width:980px){
+    .wrap{grid-template-columns: 0.9fr 1.1fr}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Simulador de Tiro Parabólico</h1>
+  <p style="margin:.3rem 0 0">Ajusta el ángulo y la velocidad, elige la gravedad y observa la trayectoria.</p>
+</header>
+
+<div class="wrap">
+  <!-- Panel de controles -->
+  <section class="panel controls">
+    <div class="row">
+      <label>Ángulo (°): <span class="val" id="angleVal">45</span></label>
+      <div class="slider">
+        <input id="angle" type="range" min="5" max="85" step="1" value="45" />
+        <button class="btn clear" id="btn45">45°</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <label>Velocidad inicial (m/s): <span class="val" id="speedVal">30</span></label>
+      <div class="slider">
+        <input id="speed" type="range" min="5" max="60" step="1" value="30" />
+        <button class="btn clear" id="btn30">30</button>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div>
+        <label for="gravSel">Gravedad</label>
+        <select id="gravSel">
+          <option value="9.81">Tierra (9.81 m/s²)</option>
+          <option value="1.62">Luna (1.62 m/s²)</option>
+          <option value="3.71">Marte (3.71 m/s²)</option>
+          <option value="custom">Personalizada…</option>
+        </select>
+      </div>
+      <div>
+        <label for="gravNum">Valor g (m/s²)</label>
+        <input id="gravNum" type="number" min="0.1" step="0.01" value="9.81" />
+      </div>
+    </div>
+
+    <div class="buttons">
+      <button class="btn play" id="launchBtn">Lanzar</button>
+      <button class="btn pause" id="pauseBtn">Pausar</button>
+      <button class="btn reset" id="resetBtn">Reiniciar</button>
+      <button class="btn clear" id="clearBtn">Limpiar trazas</button>
+    </div>
+
+    <h3 style="margin:8px 0 4px;color:#2e7d32">Resultados (modelo ideal sin rozamiento)</h3>
+    <div class="stats" id="stats">
+      <div class="pill">Tiempo de vuelo: <span id="tvuelo">—</span> s</div>
+      <div class="pill">Altura máxima: <span id="hmax">—</span> m</div>
+      <div class="pill">Alcance: <span id="range">—</span> m</div>
+    </div>
+  </section>
+
+  <!-- Lienzo -->
+  <section class="panel canvasCard">
+    <div class="legend">
+      <span class="dot path"></span> Trazo animado
+      <span class="dot pred"></span> Trayectoria prevista
+    </div>
+    <canvas id="canvas"></canvas>
+  </section>
+</div>
+
+<footer>Física: x(t)=v₀·cosθ·t, y(t)=v₀·sinθ·t − ½·g·t² (y₀=0). Sin rozamiento del aire.</footer>
+
+<script>
+/* ------------------ Elementos ------------------ */
+const angle = document.getElementById('angle');
+const speed = document.getElementById('speed');
+const angleVal = document.getElementById('angleVal');
+const speedVal = document.getElementById('speedVal');
+const gravSel = document.getElementById('gravSel');
+const gravNum = document.getElementById('gravNum');
+const launchBtn = document.getElementById('launchBtn');
+const pauseBtn = document.getElementById('pauseBtn');
+const resetBtn = document.getElementById('resetBtn');
+const clearBtn = document.getElementById('clearBtn');
+const btn45 = document.getElementById('btn45');
+const btn30 = document.getElementById('btn30');
+const tvueloEl = document.getElementById('tvuelo');
+const hmaxEl = document.getElementById('hmax');
+const rangeEl = document.getElementById('range');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+/* ------------------ Estado ------------------ */
+let g = 9.81;
+let running = false, t = 0, traj = [], trails = [];
+let pxPerMeter = 1; // escalar dinámico
+let predicted = []; // puntos de la curva prevista
+let lastFrame = 0;
+
+/* ------------------ Utilidades ------------------ */
+const toRad = d => d * Math.PI / 180;
+function clamp(n,a,b){ return Math.min(b,Math.max(a,n)); }
+function fmt(n){ return Number(n).toFixed(2); }
+
+/* ------------------ Redimensionar canvas (HiDPI) ------------------ */
+function resizeCanvas(){
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.clientWidth || canvas.parentElement.clientWidth;
+  const cssH = canvas.clientHeight || Math.max(320, window.innerHeight * 0.52);
+  canvas.width = Math.floor(cssW * dpr);
+  canvas.height = Math.floor(cssH * dpr);
+  canvas.style.width = cssW + 'px';
+  canvas.style.height = cssH + 'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0); // pintar en unidades CSS
+  draw(); // redibujar
+}
+
+/* ------------------ Físicas y predicción ------------------ */
+function computeAnalytic(v0, deg, gval){
+  const th = toRad(deg);
+  const vx = v0 * Math.cos(th);
+  const vy = v0 * Math.sin(th);
+  const T = (2 * vy) / gval;                    // tiempo de vuelo
+  const H = (vy*vy) / (2 * gval);               // altura máxima
+  const R = (v0*v0 * Math.sin(2*th)) / gval;    // alcance
+  return {vx, vy, T: Math.max(0, T), H: Math.max(0,H), R: Math.max(0,R)};
+}
+
+function buildPrediction(){
+  const v0 = +speed.value, deg = +angle.value, gval = g;
+  const {T,H,R} = computeAnalytic(v0,deg,gval);
+
+  // Escalado para que todo quepa con márgenes:
+  const margin = 40; // px
+  const usableW = canvas.clientWidth - 2*margin;
+  const usableH = canvas.clientHeight - 2*margin;
+  const sx = usableW / Math.max(1, R);
+  const sy = usableH / Math.max(1, H*1.2 + 1); // un poco más alto
+  pxPerMeter = Math.max(0.5, Math.min(sx, sy)); // coherente en ambos ejes
+
+  // Muestrear la curva prevista:
+  const steps = 120;
+  predicted = [];
+  for(let i=0;i<=steps;i++){
+    const ti = (T * i) / steps;
+    const x = (v0 * Math.cos(toRad(deg)) * ti);
+    const y = (v0 * Math.sin(toRad(deg)) * ti - 0.5*gval*ti*ti);
+    predicted.push({x,y:Math.max(0,y)});
+  }
+
+  // Actualizar stats
+  tvueloEl.textContent = fmt(T);
+  hmaxEl.textContent = fmt(H);
+  rangeEl.textContent = fmt(R);
+}
+
+/* ------------------ Sistema de coordenadas ------------------ */
+function worldToCanvas(x,y){
+  // Origen (0,0) en la esquina inferior izquierda con margen
+  const margin = 40;
+  const cx = margin + x * pxPerMeter;
+  const cy = canvas.clientHeight - margin - y * pxPerMeter;
+  return {x:cx, y:cy};
+}
+
+/* ------------------ Dibujo ------------------ */
+function drawAxes(){
+  const margin = 40;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+
+  // Fondo
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0,0,w,h);
+
+  // Cuadrícula
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--grid');
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for(let x=margin; x<=w-margin; x+=40){ ctx.moveTo(x,margin); ctx.lineTo(x,h-margin); }
+  for(let y=margin; y<=h-margin; y+=40){ ctx.moveTo(margin,y); ctx.lineTo(w-margin,y); }
+  ctx.stroke();
+
+  // Ejes
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--axis');
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  // eje X
+  ctx.moveTo(margin, h-margin);
+  ctx.lineTo(w-margin, h-margin);
+  // eje Y
+  ctx.moveTo(margin, h-margin);
+  ctx.lineTo(margin, margin);
+  ctx.stroke();
+
+  // Marcas simples (cada 5 m aprox, según escala)
+  ctx.fillStyle = "#546e7a";
+  ctx.font = "12px system-ui";
+  const stepM = niceStep( (w-2*margin)/pxPerMeter / 8 ); // ~8 marcas
+  for(let xm=0; xm<=((w-2*margin)/pxPerMeter)+1; xm+=stepM){
+    const p = worldToCanvas(xm,0);
+    ctx.fillRect(p.x, h-margin-3, 1, 6);
+    if(xm>0) ctx.fillText(Math.round(xm), p.x-6, h-margin+14);
+  }
+  for(let ym=0; ym<=((h-2*margin)/pxPerMeter)+1; ym+=stepM){
+    const p = worldToCanvas(0,ym);
+    ctx.fillRect(margin-3, p.y, 6, 1);
+    if(ym>0) ctx.fillText(Math.round(ym), margin-28, p.y+3);
+  }
+
+  function niceStep(range){
+    const pow = Math.pow(10, Math.floor(Math.log10(range)) );
+    const base = range / pow;
+    let step;
+    if(base<=1.5) step = 1;
+    else if(base<=3.5) step = 2;
+    else if(base<=7.5) step = 5;
+    else step = 10;
+    return step * pow;
+  }
+}
+
+function draw(){
+  drawAxes();
+
+  // Curva prevista (verde)
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = "#2e7d32";
+  ctx.beginPath();
+  for(let i=0;i<predicted.length;i++){
+    const p = worldToCanvas(predicted[i].x, predicted[i].y);
+    if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);
+  }
+  ctx.stroke();
+
+  // Trazas anteriores (azul tenue)
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = "rgba(25,118,210,.5)";
+  for(const trail of trails){
+    ctx.beginPath();
+    trail.forEach((pt,i)=>{
+      const p = worldToCanvas(pt.x,pt.y);
+      if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);
+    });
+    ctx.stroke();
+  }
+
+  // Trayectoria actual (azul)
+  if(traj.length){
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "#1976d2";
+    ctx.beginPath();
+    traj.forEach((pt,i)=>{
+      const p = worldToCanvas(pt.x,pt.y);
+      if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);
+    });
+    ctx.stroke();
+
+    // Proyectil (punto)
+    const last = traj[traj.length-1];
+    const c = worldToCanvas(last.x,last.y);
+    ctx.fillStyle = "#1976d2";
+    ctx.beginPath();
+    ctx.arc(c.x,c.y,6,0,Math.PI*2);
+    ctx.fill();
+  }
+}
+
+/* ------------------ Animación ------------------ */
+function step(ts){
+  if(!running){ draw(); return; }
+  if(!lastFrame) lastFrame = ts;
+  const dt = Math.min(0.04, (ts - lastFrame)/1000); // s
+  lastFrame = ts;
+
+  const v0 = +speed.value, deg = +angle.value;
+  const {vx,vy,T} = computeAnalytic(v0,deg,g);
+
+  t += dt;
+  const x = vx * t;
+  const y = Math.max(0, vy * t - 0.5 * g * t * t);
+
+  traj.push({x,y});
+
+  // Termina cuando toca el suelo o se excede T por redondeos
+  if(y<=0 && t>0.02 || t >= T){
+    running = false;
+    lastFrame = 0;
+    // guardar trazo
+    trails.push(traj.slice());
+  }
+
+  draw();
+  requestAnimationFrame(step);
+}
+
+/* ------------------ Eventos UI ------------------ */
+function updateLabels(){
+  angleVal.textContent = angle.value;
+  speedVal.textContent = speed.value;
+  g = (gravSel.value === 'custom') ? Math.max(0.1, +gravNum.value || 9.81) : +gravSel.value;
+  if(gravSel.value !== 'custom'){ gravNum.value = g; }
+  buildPrediction();
+  draw();
+}
+
+angle.addEventListener('input', updateLabels);
+speed.addEventListener('input', updateLabels);
+gravSel.addEventListener('change', updateLabels);
+gravNum.addEventListener('input', ()=>{
+  gravSel.value = 'custom';
+  updateLabels();
+});
+
+btn45.addEventListener('click', ()=>{ angle.value = 45; updateLabels(); });
+btn30.addEventListener('click', ()=>{ speed.value = 30; updateLabels(); });
+
+launchBtn.addEventListener('click', ()=>{
+  if(running) return;
+  // reiniciar trayectoria actual y tiempo
+  traj = [];
+  t = 0; lastFrame = 0;
+  running = true;
+  requestAnimationFrame(step);
+});
+
+pauseBtn.addEventListener('click', ()=>{ running = false; lastFrame = 0; });
+
+resetBtn.addEventListener('click', ()=>{
+  running = false; t = 0; lastFrame = 0; traj = [];
+  buildPrediction(); draw();
+});
+
+clearBtn.addEventListener('click', ()=>{
+  trails = [];
+  draw();
+});
+
+/* ------------------ Inicio ------------------ */
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();         // prepara el lienzo
+updateLabels();         // calcula y dibuja predicción
+draw();                 // primer dibujo
+</script>
+</body>
+</html>

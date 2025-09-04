@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>🧬 Laboratorio de Mutaciones y ADN</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+      background: linear-gradient(to right, #e0f2fe, #dbeafe);
+      color: #111827;
+    }
+    header {
+      background: #2563eb;
+      color: white;
+      padding: 1rem;
+    }
+    h1 { margin: 0; }
+    .pantalla { display: none; padding: 1rem; }
+    .activo { display: block; }
+    .btn {
+      background: #16a34a;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      margin: 10px;
+      font-size: 16px;
+      transition: transform 0.2s;
+    }
+    .btn:hover { transform: scale(1.1); background: #15803d; }
+    .nivel {
+      background: #facc15;
+      padding: 15px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      margin: 10px;
+    }
+    .nivel:hover { background: #eab308; }
+    .zona {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 20px;
+    }
+    .carta {
+      width: 120px;
+      height: 120px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f87171;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: grab;
+    }
+    .slot {
+      width: 140px;
+      height: 140px;
+      border: 3px dashed #2563eb;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      background: white;
+    }
+    .pregunta { font-size: 18px; margin: 20px; }
+    .opcion {
+      background: #60a5fa;
+      padding: 12px;
+      margin: 10px auto;
+      border-radius: 8px;
+      cursor: pointer;
+      max-width: 200px;
+    }
+    .opcion:hover { background: #2563eb; color: white; }
+    #mensaje { margin-top: 20px; font-weight: bold; }
+    #explicacion {
+      margin-top: 15px;
+      padding: 1rem;
+      background: #fff7ed;
+      border-radius: 10px;
+      border: 2px solid #f59e0b;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🧬 Laboratorio de Mutaciones y ADN</h1>
+  </header>
+
+  <!-- Pantalla de inicio -->
+  <div id="intro" class="pantalla activo">
+    <h2>Concepto</h2>
+    <p>
+      El <b>ADN</b> contiene la información genética de todos los seres vivos.
+      Una <b>mutación</b> es un cambio en esa secuencia, lo que puede provocar variaciones,
+      enfermedades o adaptaciones.
+    </p>
+    <button class="btn" onclick="mostrarPantalla('niveles')">Entrar al laboratorio</button>
+  </div>
+
+  <!-- Selección de niveles -->
+  <div id="niveles" class="pantalla">
+    <h2>Selecciona un nivel</h2>
+    <div class="nivel" onclick="iniciarNivel(1)">🔹 Nivel 1 – Clasificación</div>
+    <div class="nivel" onclick="iniciarNivel(2)">🔸 Nivel 2 – Armar ADN</div>
+    <div class="nivel" onclick="iniciarNivel(3)">🔺 Nivel 3 – Mutaciones</div>
+    <button class="btn" onclick="mostrarPantalla('intro')">⬅ Volver</button>
+  </div>
+
+  <!-- Juego -->
+  <div id="juego" class="pantalla">
+    <h2 id="tituloNivel"></h2>
+    <div id="zonaJuego"></div>
+    <p id="mensaje"></p>
+    <div id="explicacion"></div>
+    <button id="btnExtra" class="btn" style="display:none;"></button>
+    <button class="btn" onclick="mostrarPantalla('niveles')">⬅ Volver a Niveles</button>
+  </div>
+
+  <script>
+    function mostrarPantalla(id) {
+      document.querySelectorAll(".pantalla").forEach(p => p.classList.remove("activo"));
+      document.getElementById(id).classList.add("activo");
+    }
+
+    function iniciarNivel(nivel) {
+      document.getElementById("mensaje").innerText = "";
+      document.getElementById("explicacion").style.display = "none";
+      document.getElementById("btnExtra").style.display = "none";
+      const zona = document.getElementById("zonaJuego");
+      zona.innerHTML = "";
+      mostrarPantalla("juego");
+
+      if (nivel === 1) nivel1();
+      else if (nivel === 2) nivel2();
+      else if (nivel === 3) nivel3();
+    }
+
+    // ---- Nivel 1: Clasificación ADN ----
+    function nivel1() {
+      document.getElementById("tituloNivel").innerText = "Nivel 1 – Clasificación genética";
+      const opciones = ["ADN", "Proteína", "Cromosoma", "Carro", "Nucleótido", "Pelota"];
+      const correctos = ["ADN", "Cromosoma", "Nucleótido"];
+      const zona = document.getElementById("zonaJuego");
+
+      zona.innerHTML = `
+        <p class="pregunta">Arrastra los elementos correctos hacia la Zona Genética.</p>
+        <div class="zona" id="fichas"></div>
+        <div class="zona"><div class="slot" id="slot1">Zona Genética</div></div>
+      `;
+
+      const fichas = document.getElementById("fichas");
+      opciones.forEach((o,i) => {
+        const div = document.createElement("div");
+        div.className = "carta";
+        div.innerText = o;
+        div.draggable = true;
+        div.ondragstart = e => e.dataTransfer.setData("text", o);
+        fichas.appendChild(div);
+      });
+
+      document.getElementById("slot1").ondragover = e => e.preventDefault();
+      document.getElementById("slot1").ondrop = e => {
+        e.preventDefault();
+        const data = e.dataTransfer.getData("text");
+        if (correctos.includes(data)) {
+          e.target.innerText += " ✅ " + data;
+          mostrarResultado("¡Correcto!", "El ADN, cromosomas y nucleótidos son componentes esenciales de la herencia.");
+        } else {
+          mostrarResultado("❌ Incorrecto", data + " no pertenece al material genético.");
+        }
+      };
+    }
+
+    // ---- Nivel 2: Rompecabezas ADN ----
+    function nivel2() {
+      document.getElementById("tituloNivel").innerText = "Nivel 2 – Pares de bases nitrogenadas";
+      const zona = document.getElementById("zonaJuego");
+      zona.innerHTML = `
+        <p class="pregunta">Arrastra las bases para formar los pares correctos: A–T y C–G</p>
+        <div class="zona" id="fichas"></div>
+        <div class="zona">
+          <div class="slot" data-correcto="T">A</div>
+          <div class="slot" data-correcto="A">T</div>
+          <div class="slot" data-correcto="G">C</div>
+          <div class="slot" data-correcto="C">G</div>
+        </div>
+      `;
+
+      const bases = ["A","T","C","G"];
+      const fichas = document.getElementById("fichas");
+      bases.forEach(b => {
+        const div = document.createElement("div");
+        div.className = "carta";
+        div.innerText = b;
+        div.draggable = true;
+        div.ondragstart = e => e.dataTransfer.setData("text", b);
+        fichas.appendChild(div);
+      });
+
+      document.querySelectorAll(".slot").forEach(slot => {
+        slot.ondragover = e => e.preventDefault();
+        slot.ondrop = e => {
+          e.preventDefault();
+          const data = e.dataTransfer.getData("text");
+          if (data === slot.dataset.correcto) {
+            slot.innerText = slot.innerText + " ✅";
+            mostrarResultado("¡Bien hecho!", "Las bases se unen siempre: A–T y C–G.");
+          } else {
+            mostrarResultado("❌ Incorrecto", "Recuerda: A–T y C–G son pares complementarios.");
+          }
+        };
+      });
+    }
+
+    // ---- Nivel 3: Mutaciones ----
+    const mutaciones = [
+      { tipo: "insercion", original: "ATCGGTA", mutada: "ATCCGGTA", explicacion: "Se añadió una C extra: esto es una inserción." },
+      { tipo: "delecion", original: "ATCGGTA", mutada: "ATCGTA", explicacion: "Se eliminó una G: esto es una deleción." },
+      { tipo: "sustitucion", original: "ATCGGTA", mutada: "ATCAGTA", explicacion: "La C cambió por una A: esto es una sustitución." },
+      { tipo: "insercion", original: "GATTACA", mutada: "GATTTACA", explicacion: "Se insertó una T adicional: inserción." },
+      { tipo: "delecion", original: "CGTACGA", mutada: "CGTAGA", explicacion: "Se eliminó una C: deleción." },
+      { tipo: "sustitucion", original: "TACGCTA", mutada: "TAGGCTA", explicacion: "La C cambió a G: sustitución." }
+    ];
+
+    let casoActual = 0;
+    let puntaje = 0;
+
+    function nivel3() {
+      document.getElementById("tituloNivel").innerText = "Nivel 3 – Identifica la mutación";
+      casoActual = 0;
+      puntaje = 0;
+      mostrarCaso();
+    }
+
+    function mostrarCaso() {
+      const zona = document.getElementById("zonaJuego");
+      const caso = mutaciones[casoActual];
+      zona.innerHTML = `
+        <p>Secuencia original: <b>${caso.original}</b></p>
+        <p>Secuencia mutada: <b>${caso.mutada}</b></p>
+        <div class="zona">
+          <div class="opcion" onclick="respuesta('${caso.tipo}','insercion','${caso.explicacion}')">Inserción</div>
+          <div class="opcion" onclick="respuesta('${caso.tipo}','delecion','${caso.explicacion}')">Deleción</div>
+          <div class="opcion" onclick="respuesta('${caso.tipo}','sustitucion','${caso.explicacion}')">Sustitución</div>
+        </div>
+      `;
+      document.getElementById("mensaje").innerText = "";
+      document.getElementById("explicacion").style.display = "none";
+      document.getElementById("btnExtra").style.display = "none";
+    }
+
+    function respuesta(correcta, elegida, exp) {
+      if (correcta === elegida) {
+        puntaje++;
+        mostrarResultado("🎉 ¡Correcto!", exp);
+      } else {
+        mostrarResultado("❌ Incorrecto", "La mutación correcta era: " + correcta.toUpperCase() + ".");
+      }
+
+      if (casoActual < mutaciones.length - 1) {
+        document.getElementById("btnExtra").innerText = "➡ Siguiente caso";
+        document.getElementById("btnExtra").onclick = () => { casoActual++; mostrarCaso(); };
+        document.getElementById("btnExtra").style.display = "inline-block";
+      } else {
+        document.getElementById("btnExtra").innerText = "🏆 Ver puntaje final";
+        document.getElementById("btnExtra").onclick = () => {
+          mostrarResultado("Juego terminado", "Tu puntaje fue " + puntaje + " de " + mutaciones.length + " casos.");
+          document.getElementById("btnExtra").style.display = "none";
+        };
+        document.getElementById("btnExtra").style.display = "inline-block";
+      }
+    }
+
+    function mostrarResultado(msg, exp) {
+      document.getElementById("mensaje").innerText = msg;
+      const expDiv = document.getElementById("explicacion");
+      expDiv.innerHTML = exp;
+      expDiv.style.display = "block";
+    }
+  </script>
+</body>
+</html>
+

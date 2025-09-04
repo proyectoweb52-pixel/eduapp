@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Elegir Tema - Anatomía</title>
+  <link rel="stylesheet" href="../../styles.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #7c3aed, #06b6d4);
+      color: white;
+      text-align: center;
+      padding: 40px;
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    .temas {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .tema {
+      background: rgba(255,255,255,0.2);
+      border-radius: 15px;
+      padding: 30px;
+      cursor: pointer;
+      transition: transform 0.2s, background 0.3s;
+    }
+    .tema:hover {
+      transform: scale(1.05);
+      background: rgba(255,255,255,0.4);
+    }
+  </style>
+</head>
+<body>
+  <h1>Elige un sistema del cuerpo humano</h1>
+  <div class="temas">
+    <div class="tema" onclick="seleccionarTema('digestivo')">🍔 Sistema Digestivo</div>
+    <div class="tema" onclick="seleccionarTema('respiratorio')">🌬 Sistema Respiratorio</div>
+    <div class="tema" onclick="seleccionarTema('circulatorio')">❤️ Sistema Circulatorio</div>
+    <div class="tema" onclick="seleccionarTema('excretor')">🚽 Sistema Excretor</div>
+  </div>
+
+  <script>
+    function seleccionarTema(tema) {
+      // Guardar el tema en localStorage
+      localStorage.setItem("temaSeleccionado", tema);
+
+      // Redirigir al menú de juegos
+      window.location.href = "index.html";
+    }
+  </script>
+</body>
+</html>

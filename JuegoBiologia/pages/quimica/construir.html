@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Átomo Constructor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to top, #bbdefb, #e3f2fd);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      background: #1565c0;
+      color: white;
+      width: 100%;
+      padding: 20px;
+      text-align: center;
+      font-size: 1.8em;
+      font-weight: bold;
+    }
+
+    #game {
+      margin-top: 20px;
+      background: white;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      width: 90%;
+      max-width: 700px;
+      text-align: center;
+    }
+
+    .draggables {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin: 20px 0;
+    }
+
+    .particle {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2em;
+      font-weight: bold;
+      cursor: grab;
+    }
+
+    .proton { background: #ef5350; color: white; }
+    .neutron { background: #9e9e9e; color: white; }
+    .electron { background: #42a5f5; color: white; }
+
+    .dropzone {
+      border: 2px dashed #1565c0;
+      border-radius: 10px;
+      padding: 20px;
+      min-height: 100px;
+      margin: 10px 0;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      background: #1565c0;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0d47a1;
+    }
+
+    #result {
+      margin-top: 15px;
+      font-weight: bold;
+      font-size: 1.2em;
+    }
+
+    .volver {
+      margin-top: 20px;
+      background: #6a1b9a;
+    }
+  </style>
+</head>
+<body>
+  <header>⚛️ Juego: Átomo Constructor</header>
+
+  <div id="game">
+    <h2 id="elemento"></h2>
+    <p>Arrastra protones, neutrones y electrones al núcleo y niveles de energía.</p>
+
+    <div class="draggables">
+      <div class="particle proton" draggable="true" data-type="proton">p⁺</div>
+      <div class="particle neutron" draggable="true" data-type="neutron">n⁰</div>
+      <div class="particle electron" draggable="true" data-type="electron">e⁻</div>
+    </div>
+
+    <h3>Núcleo</h3>
+    <div id="nucleo" class="dropzone"></div>
+
+    <h3>Nivel de Energía</h3>
+    <div id="orbital" class="dropzone"></div>
+
+    <button onclick="verificar()">✅ Verificar</button>
+    <div id="result"></div>
+    <button class="volver" onclick="location.href='quimica.html'">⬅ Volver al menú</button>
+  </div>
+
+  <script>
+    const elementos = [
+      { nombre: "Hidrógeno", simbolo: "H", numeroAtomico: 1, masa: 1 },
+      { nombre: "Carbono", simbolo: "C", numeroAtomico: 6, masa: 12 },
+      { nombre: "Oxígeno", simbolo: "O", numeroAtomico: 8, masa: 16 },
+      { nombre: "Sodio", simbolo: "Na", numeroAtomico: 11, masa: 23 },
+      { nombre: "Cloro", simbolo: "Cl", numeroAtomico: 17, masa: 35 },
+    ];
+
+    let elementoActual = elementos[Math.floor(Math.random() * elementos.length)];
+    document.getElementById("elemento").textContent =
+      `Construye el átomo de ${elementoActual.nombre} (${elementoActual.simbolo})`;
+
+    let contador = { proton: 0, neutron: 0, electron: 0 };
+
+    document.querySelectorAll(".particle").forEach(p => {
+      p.addEventListener("dragstart", e => {
+        e.dataTransfer.setData("tipo", p.dataset.type);
+      });
+    });
+
+    document.querySelectorAll(".dropzone").forEach(zone => {
+      zone.addEventListener("dragover", e => e.preventDefault());
+      zone.addEventListener("drop", e => {
+        e.preventDefault();
+        let tipo = e.dataTransfer.getData("tipo");
+        contador[tipo]++;
+        let clone = document.createElement("div");
+        clone.className = "particle " + tipo;
+        clone.textContent = tipo === "proton" ? "p⁺" : tipo === "neutron" ? "n⁰" : "e⁻";
+        clone.style.width = "40px";
+        clone.style.height = "40px";
+        clone.style.fontSize = "0.9em";
+        zone.appendChild(clone);
+      });
+    });
+
+    function verificar() {
+      let correcto = true;
+      let msg = "";
+
+      if (contador.proton !== elementoActual.numeroAtomico) {
+        correcto = false;
+        msg += `❌ Necesitas ${elementoActual.numeroAtomico} protones.\n`;
+      }
+      if (contador.electron !== elementoActual.numeroAtomico) {
+        correcto = false;
+        msg += `❌ Necesitas ${elementoActual.numeroAtomico} electrones.\n`;
+      }
+      let neutronesEsperados = elementoActual.masa - elementoActual.numeroAtomico;
+      if (contador.neutron !== neutronesEsperados) {
+        correcto = false;
+        msg += `❌ Necesitas aprox. ${neutronesEsperados} neutrones.\n`;
+      }
+
+      if (correcto) {
+        document.getElementById("result").textContent = "✅ ¡Correcto! Has construido el átomo de " + elementoActual.nombre;
+        document.getElementById("result").style.color = "green";
+      } else {
+        document.getElementById("result").textContent = msg;
+        document.getElementById("result").style.color = "red";
+      }
+    }
+  </script>
+</body>
+</html>
+

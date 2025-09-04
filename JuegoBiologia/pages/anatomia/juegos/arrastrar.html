@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Juego de Arrastrar y Soltar</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #fef3c7, #dbeafe);
+      text-align: center;
+      padding: 20px;
+    }
+    h1 {
+      color: #1e3a8a;
+      margin-bottom: 5px;
+    }
+    p {
+      color: #374151;
+      font-size: 18px;
+    }
+    .contenedor {
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+    .zona {
+      width: 220px;
+      min-height: 280px;
+      border: 3px dashed #1e40af;
+      border-radius: 15px;
+      padding: 10px;
+      background: #ffffffb3;
+      text-align: center;
+      margin: 10px;
+      box-shadow: 0px 4px 8px rgba(0,0,0,0.2);
+    }
+    .zona h3 {
+      margin: 10px 0;
+      color: #1e40af;
+    }
+    .item {
+      background: #f59e0b;
+      color: white;
+      padding: 10px;
+      margin: 8px;
+      border-radius: 8px;
+      cursor: grab;
+      font-weight: bold;
+      transition: transform 0.2s;
+      user-select: none;
+    }
+    .item:hover {
+      transform: scale(1.1);
+    }
+    .item.seleccionado {
+      border: 3px solid #16a34a;
+      transform: scale(1.1);
+    }
+    #organos {
+      margin: 20px auto;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 900px;
+    }
+    #resultado {
+      margin-top: 20px;
+      font-size: 22px;
+      font-weight: bold;
+      color: #b91c1c;
+      white-space: pre-line;
+    }
+    button {
+      margin-top: 15px;
+      padding: 12px 18px;
+      border: none;
+      border-radius: 10px;
+      background: #16a34a;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover { background: #065f46; }
+    #volver {
+      background: #2563eb;
+    }
+    #volver:hover {
+      background: #1e3a8a;
+    }
+
+    /* 📱 Mejor para móviles */
+    @media (max-width: 768px) {
+      .contenedor {
+        flex-direction: column;
+        align-items: center;
+      }
+      .zona {
+        width: 80%;
+        min-height: 180px;
+      }
+      .item {
+        font-size: 18px;
+        padding: 12px;
+        width: 90%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>🧩 Juego de Arrastrar y Soltar</h1>
+  <p>En PC arrastra los órganos, en móvil toca un órgano y luego el sistema correcto.</p>
+
+  <div class="contenedor">
+    <div class="zona" onclick="tocarZona('digestivo')" 
+         ondragover="permitir(event)" ondrop="soltar(event,'digestivo')">
+      <h3>🍎 Digestivo</h3>
+    </div>
+    <div class="zona" onclick="tocarZona('respiratorio')" 
+         ondragover="permitir(event)" ondrop="soltar(event,'respiratorio')">
+      <h3>🌬️ Respiratorio</h3>
+    </div>
+    <div class="zona" onclick="tocarZona('circulatorio')" 
+         ondragover="permitir(event)" ondrop="soltar(event,'circulatorio')">
+      <h3>❤️ Circulatorio</h3>
+    </div>
+    <div class="zona" onclick="tocarZona('excretor')" 
+         ondragover="permitir(event)" ondrop="soltar(event,'excretor')">
+      <h3>🚽 Excretor</h3>
+    </div>
+  </div>
+
+  <h2>Órganos</h2>
+  <div id="organos"></div>
+
+  <button onclick="verificar()">✅ Verificar</button>
+  <button id="volver" onclick="volverMenu()">🏠 Volver al menú de juegos</button>
+
+  <p id="resultado"></p>
+
+  <script>
+    const organos = [
+      { nombre: "Estómago", sistema: "digestivo" },
+      { nombre: "Intestino Delgado", sistema: "digestivo" },
+      { nombre: "Intestino Grueso", sistema: "digestivo" },
+      { nombre: "Hígado", sistema: "digestivo" },
+      { nombre: "Páncreas", sistema: "digestivo" },
+      { nombre: "Esófago", sistema: "digestivo" },
+      { nombre: "Boca", sistema: "digestivo" },
+      { nombre: "Lengua", sistema: "digestivo" },
+      { nombre: "Dientes", sistema: "digestivo" },
+      { nombre: "Vesícula", sistema: "digestivo" },
+      { nombre: "Pulmones", sistema: "respiratorio" },
+      { nombre: "Tráquea", sistema: "respiratorio" },
+      { nombre: "Bronquios", sistema: "respiratorio" },
+      { nombre: "Diafragma", sistema: "respiratorio" },
+      { nombre: "Faringe", sistema: "respiratorio" },
+      { nombre: "Laringe", sistema: "respiratorio" },
+      { nombre: "Alvéolos", sistema: "respiratorio" },
+      { nombre: "Nariz", sistema: "respiratorio" },
+      { nombre: "Senos paranasales", sistema: "respiratorio" },
+      { nombre: "Cavidad nasal", sistema: "respiratorio" },
+      { nombre: "Corazón", sistema: "circulatorio" },
+      { nombre: "Arterias", sistema: "circulatorio" },
+      { nombre: "Venas", sistema: "circulatorio" },
+      { nombre: "Capilares", sistema: "circulatorio" },
+      { nombre: "Aorta", sistema: "circulatorio" },
+      { nombre: "Aurículas", sistema: "circulatorio" },
+      { nombre: "Ventrículos", sistema: "circulatorio" },
+      { nombre: "Sangre", sistema: "circulatorio" },
+      { nombre: "Plasma", sistema: "circulatorio" },
+      { nombre: "Glóbulos rojos", sistema: "circulatorio" },
+      { nombre: "Riñones", sistema: "excretor" },
+      { nombre: "Uréteres", sistema: "excretor" },
+      { nombre: "Vejiga", sistema: "excretor" },
+      { nombre: "Uretra", sistema: "excretor" },
+      { nombre: "Piel", sistema: "excretor" },
+      { nombre: "Glándulas sudoríparas", sistema: "excretor" },
+      { nombre: "Hígado (filtración)", sistema: "excretor" },
+      { nombre: "Nefronas", sistema: "excretor" },
+      { nombre: "Orina", sistema: "excretor" },
+      { nombre: "Corteza renal", sistema: "excretor" }
+    ];
+
+    let respuestas = {};
+    let seleccionado = null;
+
+    function mezclar(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function mostrarOrganos() {
+      const organosDiv = document.getElementById("organos");
+      organosDiv.innerHTML = "";
+      let organosMezclados = mezclar([...organos]);
+      organosMezclados.forEach((organo, i) => {
+        let div = document.createElement("div");
+        div.className = "item";
+        div.innerText = organo.nombre;
+        div.id = "organo" + i;
+
+        // PC → drag & drop
+        div.draggable = true;
+        div.ondragstart = (e) => arrastrar(e, organo.sistema);
+
+        // Móvil → tap & select
+        div.onclick = () => seleccionar(div, organo.sistema);
+
+        organosDiv.appendChild(div);
+      });
+    }
+
+    mostrarOrganos();
+
+    // PC
+    function arrastrar(ev, sistema) {
+      ev.dataTransfer.setData("text", ev.target.id + "|" + sistema);
+    }
+
+    function permitir(ev) { ev.preventDefault(); }
+
+    function soltar(ev, sistemaZona) {
+      ev.preventDefault();
+      const data = ev.dataTransfer.getData("text");
+      const [id, sistemaCorrecto] = data.split("|");
+      const elem = document.getElementById(id);
+      respuestas[id] = sistemaZona;
+      ev.target.appendChild(elem);
+    }
+
+    // Móvil
+    function seleccionar(elem, sistema) {
+      document.querySelectorAll(".item").forEach(it => it.classList.remove("seleccionado"));
+      seleccionado = { id: elem.id, sistema, elem };
+      elem.classList.add("seleccionado");
+    }
+
+    function tocarZona(sistemaZona) {
+      if (seleccionado) {
+        respuestas[seleccionado.id] = sistemaZona;
+        event.currentTarget.appendChild(seleccionado.elem);
+        seleccionado.elem.classList.remove("seleccionado");
+        seleccionado = null;
+      }
+    }
+
+    function verificar() {
+      let correctos = 0;
+      document.querySelectorAll(".item").forEach((item) => {
+        const organo = organos.find(o => o.nombre === item.innerText);
+        if (organo && respuestas[item.id] === organo.sistema) {
+          correctos++;
+        }
+      });
+
+      let nota = Math.round((correctos / organos.length) * 20);
+      document.getElementById("resultado").innerText =
+        `✔️ Respuestas correctas: ${correctos}/${organos.length}\n📊 Nota final: ${nota}/20`;
+    }
+
+    function volverMenu() {
+      window.location.href = "../index.html"; // 🔹 Ajustado al menú principal de Anatomía
+    }
+  </script>
+</body>
+</html>
+
+

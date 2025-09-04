@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ciencia y Tecnología – Juego Michi</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    :root{
+      --green-1:#e9f7ef;
+      --green-2:#c8e6c9;
+      --green-3:#81c784;
+      --green-4:#43a047;
+      --green-5:#2e7d32;
+      --text:#224228;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      background: linear-gradient(180deg, var(--green-1), #f9fffb);
+      color:var(--text);
+    }
+    header{
+      text-align:center;
+      padding:18px 12px;
+      background: linear-gradient(90deg, var(--green-4), var(--green-5));
+      color:#fff;
+      box-shadow:0 2px 10px rgba(0,0,0,.15);
+    }
+    header h1{
+      margin:0;
+      font-size: clamp(1.2rem, 2.6vw, 1.8rem);
+      letter-spacing:.3px;
+      font-weight:800;
+    }
+    header p{
+      margin:.3rem 0 0;
+      opacity:.95;
+      font-size:.95rem;
+    }
+
+    .wrap{
+      max-width:980px;
+      margin: 20px auto;
+      padding: 0 14px 30px;
+    }
+
+    .panel{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:14px;
+      margin-bottom:14px;
+    }
+    .scoreboard{
+      background:#fff;
+      border:2px solid var(--green-2);
+      border-radius:14px;
+      padding:12px;
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      box-shadow:0 4px 14px rgba(67,160,71,.12);
+    }
+    .score{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      font-weight:700;
+    }
+    .score .pill{
+      background:var(--green-2);
+      color:var(--green-5);
+      padding:6px 12px;
+      border-radius:999px;
+      font-variant-numeric: tabular-nums;
+      border:1px solid var(--green-3);
+    }
+    .turn{
+      font-weight:700;
+    }
+    .btns{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    button{
+      border:none;
+      cursor:pointer;
+      padding:10px 14px;
+      border-radius:10px;
+      font-weight:700;
+      color:#fff;
+      background:var(--green-4);
+      box-shadow:0 4px 10px rgba(67,160,71,.18);
+      transition: transform .06s ease, filter .2s ease, background .2s ease;
+      user-select:none;
+      touch-action:manipulation;
+    }
+    button:hover{ filter:brightness(1.03); }
+    button:active{ transform: translateY(1px); }
+    .btn-outline{
+      background:#fff;
+      color:var(--green-5);
+      border:2px solid var(--green-4);
+    }
+    .btn-danger{
+      background:#d32f2f;
+      box-shadow:0 4px 10px rgba(211,47,47,.18);
+    }
+
+    /* Tablero */
+    .board{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(90px, 1fr));
+      gap:10px;
+      max-width:520px;
+      margin: 10px auto 0;
+    }
+    .cell{
+      aspect-ratio:1/1;
+      background:#ffffff;
+      border:2px solid var(--green-3);
+      border-radius:14px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size: clamp(2rem, 8vw, 3rem);
+      font-weight:900;
+      color:var(--green-5);
+      box-shadow: inset 0 0 0 6px var(--green-2), 0 6px 16px rgba(46,125,50,.12);
+      transition: transform .08s ease, box-shadow .2s ease, background .2s ease;
+    }
+    .cell:hover{ transform: translateY(-2px); }
+    .cell.disabled{ pointer-events:none; filter: grayscale(.3) opacity(.8); }
+    .cell.win{ background: #d9f8e5; box-shadow: inset 0 0 0 6px #a5e6c0, 0 8px 18px rgba(46,125,50,.2); }
+
+    .legend{
+      text-align:center;
+      margin-top:10px;
+      font-size:.95rem;
+      opacity:.85;
+    }
+
+    /* Modales */
+    .modal{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.55);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index:10;
+    }
+    .modal.show{ display:flex; }
+    .card{
+      width:min(680px, 96vw);
+      background:#ffffff;
+      border-radius:16px;
+      border:2px solid var(--green-2);
+      box-shadow:0 14px 40px rgba(0,0,0,.2);
+      padding:18px;
+    }
+    .card h3{ margin:0 0 8px 0; color:var(--green-5); }
+    .q-meta{
+      font-size:.85rem; opacity:.8; margin-bottom:10px;
+    }
+    .options{
+      display:grid;
+      gap:10px;
+      margin-top:10px;
+    }
+    .opt{
+      background:#f7fff9;
+      border:2px solid var(--green-3);
+      border-radius:12px;
+      padding:10px 12px;
+      text-align:left;
+      font-weight:700;
+      color:var(--text);
+      transition: background .15s ease, transform .05s ease;
+    }
+    .opt:hover{ background:#eefcf2; }
+    .opt:active{ transform: translateY(1px); }
+
+    .result-title{
+      font-size:1.2rem; font-weight:800; color:var(--green-5); margin-bottom:6px;
+    }
+    .hr{ height:1px; background:var(--green-2); margin:12px 0; }
+
+    @media (max-width:520px){
+      .scoreboard{gap:8px}
+      .board{gap:8px}
+      .cell{border-radius:12px}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>CIENCIA Y TECNOLOGÍA — Juego Michi</h1>
+    <p>Responde correctamente para colocar tu ficha. ¡Compiten ❌ y ⭘!</p>
+  </header>
+
+  <div class="wrap">
+    <section class="panel scoreboard">
+      <div class="score">
+        <span>❌ X</span>
+        <span class="pill" id="scoreX">0</span>
+      </div>
+      <div class="score">
+        <span>⭘ O</span>
+        <span class="pill" id="scoreO">0</span>
+      </div>
+      <div class="turn">Turno: <span id="turnLabel">❌</span></div>
+      <div class="btns">
+        <button class="btn-outline" id="btnNew">Nueva ronda</button>
+        <button class="btn-danger" id="btnReset">Reiniciar marcador</button>
+      </div>
+    </section>
+
+    <section>
+      <div class="board" id="board"></div>
+      <div class="legend">Selecciona una casilla → responde una pregunta (3 opciones). Si aciertas, tu ficha se coloca. Si no, pierdes el turno.</div>
+    </section>
+  </div>
+
+  <!-- Modal Pregunta -->
+  <div class="modal" id="modalQ">
+    <div class="card">
+      <h3>Pregunta de Ciencia y Tecnología</h3>
+      <div class="q-meta"><span id="topic"></span> • Dificultad media</div>
+      <div id="qText"></div>
+      <div class="options" id="options"></div>
+    </div>
+  </div>
+
+  <!-- Modal Resultado de Ronda -->
+  <div class="modal" id="modalR">
+    <div class="card">
+      <div class="result-title" id="rTitle">¡Ronda finalizada!</div>
+      <div id="rMsg"></div>
+      <div class="hr"></div>
+      <div class="btns" style="justify-content:flex-end">
+        <button class="btn-outline" id="rOk">Nueva ronda</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ======== Banco de 20 preguntas (3 opciones) ========
+    const QUESTION_BANK = [
+      {topic:"Energía", q:"¿Cuál es la unidad del Sistema Internacional para medir energía?",
+        options:["Joule (J)","Watt (W)","Newton (N)"], a:0},
+      {topic:"Electricidad", q:"En un circuito simple, ¿qué componente limita la corriente?",
+        options:["Resistencia","Batería","Interruptor"], a:0},
+      {topic:"Materiales", q:"¿Cuál es una propiedad característica de los metales?",
+        options:["Alta conductividad eléctrica","Baja densidad siempre","No se pueden deformar"], a:0},
+      {topic:"Energías renovables", q:"La energía eólica se genera principalmente a partir de:",
+        options:["Movimiento del aire","Calor del subsuelo","Radiación de materiales"], a:0},
+      {topic:"Fuerza y movimiento", q:"Si la fuerza neta sobre un objeto es cero, el objeto:",
+        options:["Mantiene su estado de movimiento","Acelera constantemente","Se detiene de inmediato"], a:0},
+      {topic:"Tecnología", q:"Un sensor de temperatura común en prototipos escolares es:",
+        options:["Termistor","Altavoz","Motor DC"], a:0},
+      {topic:"Biotecnología", q:"Fermentación láctica es realizada por:",
+        options:["Bacterias","Plantas","Metales"], a:0},
+      {topic:"Ambiente", q:"El efecto invernadero es causado principalmente por el aumento de:",
+        options:["Gases de CO₂ y CH₄","Oxígeno atmosférico","Nitrógeno atmosférico"], a:0},
+      {topic:"Cálculo eléctrico", q:"Ley de Ohm: V = I · R. Si R=5Ω e I=2A, V es:",
+        options:["10 V","2.5 V","7 V"], a:0},
+      {topic:"Tecnología", q:"Un ejemplo de entrada (input) en una placa Arduino es:",
+        options:["Lectura de un botón","Encendido de un LED","Giro de un motor"], a:0},
+      {topic:"Energía mecánica", q:"La energía potencial gravitatoria depende de:",
+        options:["Altura y masa","Temperatura","Color del objeto"], a:0},
+      {topic:"Circuitos", q:"Los cables en paralelo comparten:",
+        options:["El mismo voltaje","La misma corriente","La misma resistencia"], a:0},
+      {topic:"Ondas", q:"El sonido se propaga mejor en:",
+        options:["Sólidos","Vacío","No se propaga"], a:0},
+      {topic:"TIC", q:"Un algoritmo es:",
+        options:["Una secuencia de pasos","Un tipo de cable","Un circuito integrado"], a:0},
+      {topic:"Energía", q:"Una forma de energía química almacenada en pilas es:",
+        options:["Energía electroquímica","Energía sonora","Energía nuclear"], a:0},
+      {topic:"Seguridad", q:"Para manipular electricidad en laboratorio debes usar:",
+        options:["Guantes y equipo aislante","Manos mojadas","Cables pelados"], a:0},
+      {topic:"Impresión 3D", q:"El material PLA es un polímero obtenido a partir de:",
+        options:["Fuentes vegetales (almidón)","Petróleo exclusivamente","Metales"], a:0},
+      {topic:"Mecánica", q:"Para reducir la fricción entre dos superficies se usa:",
+        options:["Lubricante","Papel lija","Más peso"], a:0},
+      {topic:"Energía solar", q:"Las celdas fotovoltaicas convierten la luz en:",
+        options:["Electricidad","Sonido","Calor exclusivamente"], a:0},
+      {topic:"Reciclaje", q:"La R que significa ‘reutilizar’ implica:",
+        options:["Volver a usar un objeto","Quemar residuos","Tirar todo a un contenedor"], a:0},
+    ];
+
+    // ======== Estado del juego ========
+    const boardEl = document.getElementById("board");
+    const turnLabel = document.getElementById("turnLabel");
+    const scoreXEl = document.getElementById("scoreX");
+    const scoreOEl = document.getElementById("scoreO");
+    const btnNew = document.getElementById("btnNew");
+    const btnReset = document.getElementById("btnReset");
+
+    const modalQ = document.getElementById("modalQ");
+    const qText = document.getElementById("qText");
+    const topicEl = document.getElementById("topic");
+    const optionsEl = document.getElementById("options");
+
+    const modalR = document.getElementById("modalR");
+    const rTitle = document.getElementById("rTitle");
+    const rMsg = document.getElementById("rMsg");
+    const rOk = document.getElementById("rOk");
+
+    let board = Array(9).fill("");
+    let currentPlayer = "X"; // X o O
+    let score = {X:0, O:0};
+    let cells = [];
+    let selectedCell = null;
+    let qPool = [];
+
+    // ======== Inicialización ========
+    function init(){
+      // tablero
+      boardEl.innerHTML = "";
+      cells = [];
+      for(let i=0;i<9;i++){
+        const c = document.createElement("button");
+        c.className = "cell";
+        c.setAttribute("aria-label","Casilla "+(i+1));
+        c.addEventListener("click", ()=> onCellClick(i));
+        boardEl.appendChild(c);
+        cells.push(c);
+      }
+      updateTurnLabel();
+      refillQuestions();
+      attachUI();
+    }
+
+    function attachUI(){
+      btnNew.onclick = newRound;
+      btnReset.onclick = resetAll;
+      rOk.onclick = ()=>{
+        modalR.classList.remove("show");
+        newRound();
+      };
+    }
+
+    function updateTurnLabel(){
+      turnLabel.textContent = currentPlayer === "X" ? "❌" : "⭘";
+    }
+
+    // ======== Lógica de preguntas ========
+    function refillQuestions(){
+      // Clonar y mezclar
+      qPool = QUESTION_BANK.map((q,idx)=>({...q, id:idx}));
+      shuffle(qPool);
+    }
+
+    function drawQuestion(){
+      if(qPool.length===0) refillQuestions();
+      return qPool.pop();
+    }
+
+    function onCellClick(i){
+      if(board[i] !== "") return; // ya ocupada
+      selectedCell = i;
+      // Mostrar pregunta
+      const q = drawQuestion();
+      modalQ.classList.add("show");
+      topicEl.textContent = q.topic;
+      qText.textContent = q.q;
+      optionsEl.innerHTML = "";
+      q.options.forEach((op, idx)=>{
+        const b = document.createElement("button");
+        b.className = "opt";
+        b.textContent = (idx+1)+") "+op;
+        b.onclick = ()=> answerQuestion(idx === q.a);
+        optionsEl.appendChild(b);
+      });
+    }
+
+    function answerQuestion(correct){
+      modalQ.classList.remove("show");
+      if(correct){
+        // colocar ficha
+        board[selectedCell] = currentPlayer;
+        renderBoard();
+        const res = evaluateBoard();
+        if(res.finished){
+          endRound(res);
+          return;
+        }
+        // sigue el mismo flujo de turno normal al alternar
+        currentPlayer = currentPlayer === "X" ? "O" : "X";
+        updateTurnLabel();
+      }else{
+        // pierde turno
+        currentPlayer = currentPlayer === "X" ? "O" : "X";
+        updateTurnLabel();
+      }
+    }
+
+    // ======== Render y evaluación ========
+    function renderBoard(){
+      for(let i=0;i<9;i++){
+        cells[i].textContent = board[i];
+        if(board[i] !== "") cells[i].classList.add("disabled");
+      }
+    }
+
+    const WINS = [
+      [0,1,2],[3,4,5],[6,7,8], // filas
+      [0,3,6],[1,4,7],[2,5,8], // columnas
+      [0,4,8],[2,4,6]          // diagonales
+    ];
+
+    function evaluateBoard(){
+      for(const combo of WINS){
+        const [a,b,c] = combo;
+        if(board[a] && board[a]===board[b] && board[a]===board[c]){
+          // destacar celdas ganadoras
+          combo.forEach(idx=> cells[idx].classList.add("win"));
+          return { finished:true, winner: board[a] };
+        }
+      }
+      if(board.every(v=>v!=="")) return { finished:true, winner:null }; // empate
+      return { finished:false, winner:null };
+    }
+
+    function endRound(res){
+      // Deshabilitar el resto
+      cells.forEach(cell=> cell.classList.add("disabled"));
+      if(res.winner){
+        score[res.winner]++;
+        scoreXEl.textContent = score["X"];
+        scoreOEl.textContent = score["O"];
+        rTitle.textContent = `¡Ronda para ${res.winner==="X"?"❌ X":"⭘ O"}!`;
+        rMsg.textContent = `Marcador — ❌ X: ${score["X"]} • ⭘ O: ${score["O"]}`;
+      }else{
+        rTitle.textContent = "¡Empate!";
+        rMsg.textContent = `Sigan intentando — ❌ X: ${score["X"]} • ⭘ O: ${score["O"]}`;
+      }
+      modalR.classList.add("show");
+    }
+
+    // ======== Controles ========
+    function newRound(){
+      board = Array(9).fill("");
+      cells.forEach(cell=>{
+        cell.textContent = "";
+        cell.classList.remove("disabled","win");
+      });
+      // Alternar quién empieza la siguiente ronda:
+      currentPlayer = (score["X"] + score["O"]) % 2 === 0 ? "X" : "O";
+      updateTurnLabel();
+    }
+
+    function resetAll(){
+      score = {X:0,O:0};
+      scoreXEl.textContent = "0";
+      scoreOEl.textContent = "0";
+      currentPlayer = "X";
+      updateTurnLabel();
+      newRound();
+    }
+
+    // ======== Utilidad ========
+    function shuffle(arr){
+      for(let i=arr.length-1;i>0;i--){
+        const j = Math.floor(Math.random()*(i+1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    // Iniciar
+    init();
+  </script>
+</body>
+</html>
+
+

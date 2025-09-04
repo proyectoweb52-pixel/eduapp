@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Sopa de Letras - Ciencia y Tecnología</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(180deg, #e8f5e9, #e3f2fd);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 15px;
+    }
+    h1 {
+      color: #2e7d32;
+      margin: 10px 0;
+      text-align: center;
+    }
+    .info {
+      margin: 10px;
+      font-weight: bold;
+      color: #1565c0;
+    }
+    .game {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 28px);
+      gap: 2px;
+      user-select: none;
+    }
+    .cell {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+      border: 1px solid #90caf9;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .cell.select {
+      background: #ffeb3b;
+    }
+    .cell.found {
+      background: #66bb6a;
+      color: white;
+    }
+    .wordlist {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+    .word {
+      padding: 5px 10px;
+      background: #bbdefb;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+    .word.done {
+      background: #66bb6a;
+      color: white;
+      text-decoration: line-through;
+    }
+    .modal {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      max-width: 300px;
+    }
+    .btn {
+      margin-top: 15px;
+      padding: 10px 15px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      background: #2e7d32;
+      color: white;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Sopa de Letras - Ciencia y Tecnología</h1>
+  <div class="info">Nivel <span id="level">1</span> / 5</div>
+  <div class="game">
+    <div class="grid" id="grid"></div>
+    <div class="wordlist" id="words"></div>
+  </div>
+
+  <div class="modal" id="modal">
+    <div class="modal-content">
+      <p id="modalMsg"></p>
+      <button class="btn" id="btnSiguiente">Siguiente nivel</button>
+    </div>
+  </div>
+
+<script>
+const LEVELS = [
+  ["Sol","Luz","Agua","Aire","Celula"],
+  ["Energia","Atomo","Materia","Clorofila","Fotosintesis","Planta","Bacteria","Minerales"],
+  ["Ecosistema","Fuerza","Movimiento","Electricidad","Nutrientes","Tecnologia","Ciencia","Oxigeno","Carbono","Microscopio"],
+  ["Mitocondria","Respiracion","Cromosoma","Sustentable","Energetica","Termodinamica","Circuito","Protones","Electrones","Genetica","Digestion","Innovacion"],
+  ["Biodiversidad","Electromagnetismo","Nanotecnologia","Sustentabilidad","Biotecnologia","Climatologia","Reacciones","Fotosintetica","Ingenieria","Adaptacion","Desarrollo","Investigacion","Evolucion","Radiacion","Informatica"]
+];
+
+let levelIndex = 0;
+let gridSize = 12;
+let gridEl = document.getElementById("grid");
+let wordsEl = document.getElementById("words");
+let levelEl = document.getElementById("level");
+let modal = document.getElementById("modal");
+let modalMsg = document.getElementById("modalMsg");
+let btnSiguiente = document.getElementById("btnSiguiente");
+
+let grid, placements, selectionPath, foundWords;
+
+function initLevel(){
+  levelEl.textContent = (levelIndex+1);
+  grid = Array(gridSize*gridSize).fill("");
+  placements = [];
+  selectionPath = [];
+  foundWords = new Set();
+
+  // Colocar palabras
+  for(const w of LEVELS[levelIndex]){
+    placeWord(w.toUpperCase());
+  }
+  fillGrid();
+  renderGrid();
+  renderWordList();
+}
+
+function placeWord(word){
+  let placed = false;
+  for(let tries=0; tries<100 && !placed; tries++){
+    const dir = [[1,0],[0,1],[1,1],[-1,1]][Math.floor(Math.random()*4)];
+    const row = Math.floor(Math.random()*gridSize);
+    const col = Math.floor(Math.random()*gridSize);
+    const positions = [];
+    for(let i=0;i<word.length;i++){
+      const r = row + dir[0]*i;
+      const c = col + dir[1]*i;
+      if(r<0||c<0||r>=gridSize||c>=gridSize) break;
+      const idx = r*gridSize+c;
+      if(grid[idx]!=="" && grid[idx]!==word[i]) break;
+      positions.push(idx);
+    }
+    if(positions.length===word.length){
+      positions.forEach((idx,i)=> grid[idx]=word[i]);
+      placements.push({word,positions});
+      placed = true;
+    }
+  }
+}
+
+function fillGrid(){
+  const letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  for(let i=0;i<grid.length;i++){
+    if(grid[i]==="") grid[i]=letters[Math.floor(Math.random()*letters.length)];
+  }
+}
+
+function renderGrid(){
+  gridEl.innerHTML="";
+  grid.forEach((ch,idx)=>{
+    const cell=document.createElement("div");
+    cell.className="cell";
+    cell.textContent=ch;
+    cell.dataset.index=idx;
+    cell.addEventListener("mousedown",startSelect);
+    cell.addEventListener("mouseenter",extendSelect);
+    cell.addEventListener("mouseup",endSelect);
+    cell.addEventListener("touchstart",startSelect);
+    cell.addEventListener("touchmove",extendSelect);
+    cell.addEventListener("touchend",endSelect);
+    gridEl.appendChild(cell);
+  });
+}
+
+function renderWordList(){
+  wordsEl.innerHTML="";
+  for(const p of placements){
+    const item=document.createElement("div");
+    item.className="word";
+    item.dataset.word=p.word;
+    item.textContent=p.word;
+    wordsEl.appendChild(item);
+  }
+}
+
+function startSelect(e){
+  e.preventDefault();
+  clearSelection();
+  const idx=e.target.dataset.index;
+  if(idx!==undefined){
+    selectionPath=[parseInt(idx)];
+    gridEl.children[idx].classList.add("select");
+  }
+}
+
+function extendSelect(e){
+  if(selectionPath.length===0) return;
+  let touch=e.touches? e.touches[0]:null;
+  let target;
+  if(touch){
+    target=document.elementFromPoint(touch.clientX,touch.clientY);
+  } else {
+    target=e.target;
+  }
+  if(target && target.classList.contains("cell")){
+    const idx=parseInt(target.dataset.index);
+    if(!selectionPath.includes(idx)){
+      selectionPath.push(idx);
+      target.classList.add("select");
+    }
+  }
+}
+
+function endSelect(e){
+  if(selectionPath.length>0){
+    checkSelection();
+  }
+}
+
+function clearSelection(){
+  selectionPath.forEach(idx=> gridEl.children[idx].classList.remove("select"));
+  selectionPath=[];
+}
+
+function checkSelection(){
+  if(selectionPath.length<2){ clearSelection(); return; }
+  const target=placements.find(p=> !foundWords.has(p.word) &&
+    (equalsPositions(selectionPath,p.positions) || equalsPositions(selectionPath.slice().reverse(),p.positions)));
+  if(target){
+    foundWords.add(target.word);
+    for(const idx of target.positions){
+      gridEl.children[idx].classList.remove("select");
+      gridEl.children[idx].classList.add("found");
+    }
+    const el=wordsEl.querySelector(`.word[data-word="${target.word}"]`);
+    if(el) el.classList.add("done");
+    if(foundWords.size===placements.length){
+      modalMsg.textContent=`¡Encontraste todas las palabras del nivel ${levelIndex+1}!`;
+      modal.style.display="flex";
+      btnSiguiente.textContent=(levelIndex===LEVELS.length-1)?"Terminar":"Siguiente nivel";
+    }
+  }
+  clearSelection();
+}
+
+function equalsPositions(a,b){
+  if(a.length!==b.length) return false;
+  for(let i=0;i<a.length;i++) if(a[i]!==b[i]) return false;
+  return true;
+}
+
+btnSiguiente.addEventListener("click",()=>{
+  modal.style.display="none";
+  if(levelIndex<LEVELS.length-1){
+    levelIndex++;
+    initLevel();
+  } else {
+    alert("¡Felicidades! Completaste todos los niveles 🎉");
+    levelIndex=0;
+    initLevel();
+  }
+});
+
+initLevel();
+</script>
+</body>
+</html>
+

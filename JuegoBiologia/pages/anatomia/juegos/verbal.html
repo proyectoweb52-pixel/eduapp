@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Razonamiento Verbal - Ciencias</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root{
+      --p: #0077b6;
+      --p-dark:#023e8a;
+      --accent:#00b4d8;
+      --bg1:#90e0ef;
+      --bg2:#caf0f8;
+      --ok:#22c55e;
+      --bad:#ef4444;
+      --card:#ffffff;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:#222;
+      background: linear-gradient(135deg,var(--bg1),var(--bg2));
+      display:flex;
+      flex-direction:column;
+      min-height:100vh;
+    }
+    header{
+      background: var(--p);
+      color:#fff;
+      text-align:center;
+      padding:1rem;
+    }
+    header h1{margin:0;font-size:clamp(1.2rem,2.8vw,1.8rem)}
+    header p{margin:.2rem 0 0;opacity:.95}
+
+    /* Pantalla inicial */
+    #inicio{
+      flex:1; display:flex; align-items:center; justify-content:center; padding:1rem;
+    }
+    .card{
+      width:min(680px,92vw);
+      background:var(--card);
+      border-radius:16px;
+      padding:1.4rem;
+      box-shadow: 0 10px 24px rgba(0,0,0,.15);
+      text-align:center;
+    }
+    .card h2{color:var(--p);margin:.2rem 0 .8rem}
+    .card p{margin:.4rem 0}
+    .btn{
+      background:var(--p);
+      color:#fff;
+      border:none;
+      padding:.85rem 1.2rem;
+      border-radius:12px;
+      font-weight:700;
+      cursor:pointer;
+      transition:.2s transform,.2s background;
+      touch-action: manipulation;
+    }
+    .btn:active{transform:scale(.98)}
+    .btn:hover{background:var(--p-dark)}
+    .btn.alt{background:#009688}
+    .btn.alt:hover{background:#00796B}
+
+    /* Vista niveles */
+    #levelsView{display:none; padding:1rem; text-align:center}
+    .levels{
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px,1fr));
+      gap:1rem;
+      width:min(900px,94vw);
+      margin:1rem auto;
+    }
+    .level{
+      background:#e0fbfc;
+      border:2px solid var(--accent);
+      color:#055160;
+      border-radius:16px;
+      padding:1.1rem .6rem;
+      font-weight:800;
+      cursor:pointer;
+      transition:.2s transform,.2s box-shadow;
+      user-select:none;
+    }
+    .level:hover{transform:translateY(-2px); box-shadow:0 8px 18px rgba(0,0,0,.12)}
+    .level.locked{background:#ddd; border-color:#bbb; color:#666; cursor:not-allowed; box-shadow:none; transform:none}
+
+    /* Vista preguntas */
+    #content{
+      display:none;
+      width:min(900px,94vw);
+      margin:1rem auto 5.2rem;
+      background:#fff;
+      border-radius:16px;
+      padding:1rem;
+      box-shadow:0 10px 24px rgba(0,0,0,.15);
+    }
+    #levelTitle{margin:.2rem 0 .6rem; color:var(--p)}
+    #text{
+      background:#f8fafc;
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      padding:1rem;
+      line-height:1.5;
+    }
+    .controls{display:flex; flex-wrap:wrap; gap:.5rem; margin:1rem 0}
+    .question{margin:1rem 0; padding:.8rem; border-radius:12px; background:#f9fafb; border:1px solid #e5e7eb}
+    .question p{margin:.2rem 0 .5rem; font-weight:600}
+    .option{
+      display:flex; align-items:center; gap:.55rem;
+      padding:.55rem .7rem; margin:.35rem 0;
+      border:1px solid #dae1e7; border-radius:10px; background:#fff;
+      cursor:pointer; touch-action: manipulation;
+    }
+    .option input{width:22px; height:22px}
+    .option.correct{border-color:var(--ok); background:#ecfdf5}
+    .option.wrong{border-color:var(--bad); background:#fef2f2}
+
+    /* Botón flotante volver a niveles */
+    #volverNiveles{
+      display:none;
+      position:fixed; left:50%; transform:translateX(-50%);
+      bottom:14px; z-index:1000;
+      padding:.9rem 1.6rem; border-radius:14px;
+      background:#28a745; color:#fff; border:none; font-weight:800;
+      box-shadow:0 10px 16px rgba(0,0,0,.25);
+      touch-action: manipulation;
+    }
+    #volverNiveles:active{transform:translateX(-50%) scale(.98)}
+
+    /* Modal */
+    .modal{display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:1100;
+      align-items:center; justify-content:center; padding:1rem}
+    .modal-content{
+      width:min(450px,92vw); background:#fff; border-radius:16px; padding:1.3rem; text-align:center;
+      box-shadow:0 10px 24px rgba(0,0,0,.25)
+    }
+    .score{
+      font-size:1.1rem; font-weight:700; margin:.6rem 0; color:#111
+    }
+
+    /* Accesibilidad y móviles */
+    @media (pointer:coarse){
+      .btn, .option{padding:1rem}
+      .option input{width:26px; height:26px}
+      .level{padding:1.2rem .8rem}
+    }
+    @media (prefers-reduced-motion: reduce){
+      *{transition:none !important}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Razonamiento Verbal – Ciencias</h1>
+    <p>Nutrición • Digestivo • Circulatorio • Respiratorio • Excretor</p>
+  </header>
+
+  <!-- Pantalla inicial -->
+  <section id="inicio">
+    <div class="card">
+      <h2>Bienvenido</h2>
+      <p>Lee el texto, responde 10 preguntas y aprueba con <b>70% o más</b> para avanzar al siguiente nivel.</p>
+      <p>Puedes usar <b>🔊 Lectura en voz alta</b> si lo prefieres.</p>
+      <button class="btn" onclick="irNiveles()">Comenzar</button>
+    </div>
+  </section>
+
+  <!-- Vista de niveles -->
+  <section id="levelsView">
+    <h2>Selecciona un nivel</h2>
+    <div class="levels" id="levels"></div>
+    <button class="btn alt" onclick="location.href= '../index.html'" >🏠 Volver al Menú de Juegos</button>
+  </section>
+
+  <!-- Vista de preguntas -->
+  <main id="content">
+    <h2 id="levelTitle"></h2>
+    <p id="text"></p>
+
+    <div class="controls">
+      <button class="btn" onclick="speakText()">🔊 Leer</button>
+      <button class="btn" onclick="pauseResume()">⏯ Pausar/Reanudar</button>
+      <button class="btn" onclick="stopReading()">⏹ Detener</button>
+    </div>
+
+    <div id="questions"></div>
+    <button class="btn" onclick="submitAnswers()">Enviar respuestas</button>
+  </main>
+
+  <!-- Botón flotante -->
+  <button id="volverNiveles" onclick="volverANiveles()">⬅ Volver a Niveles</button>
+
+  <!-- Modal resultados -->
+  <div class="modal" id="resultModal">
+    <div class="modal-content">
+      <h2 id="resultTitle">Resultado</h2>
+      <p class="score" id="resultMessage"></p>
+      <button class="btn" onclick="closeModal()">Cerrar</button>
+    </div>
+  </div>
+
+  <script>
+    /* =========================
+       TEXTOS + 10 PREGUNTAS POR SISTEMA
+       ========================= */
+    const LEVELS = [
+      /* 0 - NUTRICIÓN */
+      {
+        name: "Nutrición",
+        text:
+`La nutrición es el proceso biológico por el cual los seres vivos obtienen, transforman y utilizan los nutrientes de los alimentos para obtener energía, construir y reparar tejidos, y regular funciones vitales. Incluye la ingestión, digestión, absorción, transporte, asimilación y excreción. Una dieta equilibrada combina macronutrientes (carbohidratos, proteínas y lípidos) y micronutrientes (vitaminas y minerales). El equilibrio entre ingesta y gasto energético, junto con la calidad de los alimentos, condiciona la salud y el rendimiento físico e intelectual.`,
+        questions: [
+          { q:"La nutrición es, ante todo, un…", options:["Proceso biológico","Estilo de vida", "Programa deportivo"], answer:0 },
+          { q:"Son macronutrientes:", options:["Carbohidratos, proteínas y lípidos","Vitaminas y minerales","Agua y fibra únicamente"], answer:0 },
+          { q:"Los probióticos son…", options:["Microorganismos beneficiosos para el intestino","Vitaminas que dan energía","Azúcares complejos"], answer:0 },
+          { q:"¿Cuál es una vitamina liposoluble?", options:["Vitamina D","Vitamina C","Vitamina B1"], answer:0 },
+          { q:"La función principal de las proteínas es…", options:["Formar y reparar tejidos","Aportar sabor","Almacenar agua"], answer:0 },
+          { q:"La fibra dietética se relaciona con…", options:["Mejor tránsito intestinal","Producción de bilis","Aumento rápido de glucosa"], answer:0 },
+          { q:"La absorción de hierro no hemo mejora con…", options:["Vitamina C","Sodio","Grasas saturadas"], answer:0 },
+          { q:"Un ejemplo de carbohidrato complejo es…", options:["Avena","Azúcar blanca","Miel"], answer:0 },
+          { q:"Son grasas más saludables para el corazón…", options:["Monoinsaturadas y omega-3","Trans y saturadas","Hidrogenadas"], answer:0 },
+          { q:"El balance energético depende de…", options:["Ingesta vs. gasto calórico","Cantidad de agua","Horas de sueño solamente"], answer:0 }
+        ]
+      },
+
+      /* 1 - DIGESTIVO (10) */
+      {
+        name: "Sistema Digestivo",
+        text:
+`El sistema digestivo transforma los alimentos en moléculas simples aprovechables. La digestión inicia en la boca con la masticación y la acción de enzimas salivales; continúa en el estómago con los jugos gástricos; y culmina en el intestino delgado, donde la mayoría de nutrientes se absorbe hacia la sangre. El hígado produce bilis (almacenada en vesícula) que emulsiona grasas; y el páncreas aporta enzimas que degradan proteínas, lípidos y carbohidratos.`,
+        questions: [
+          { pregunta: "¿Dónde comienza la digestión de los carbohidratos?", opciones: ["Estómago","Boca","Intestino delgado","Hígado"], respuesta: 1 },
+          { pregunta: "¿Qué órgano produce la bilis?", opciones: ["Páncreas","Hígado","Vesícula","Estómago"], respuesta: 1 },
+          { pregunta: "¿Dónde ocurre la mayor absorción de nutrientes?", opciones: ["Boca","Estómago","Intestino delgado","Intestino grueso"], respuesta: 2 },
+          { pregunta: "¿Qué órgano almacena la bilis?", opciones: ["Vesícula","Estómago","Hígado","Intestino"], respuesta: 0 },
+          { pregunta: "¿Qué enzima comienza a digerir carbohidratos?", opciones: ["Amilasa","Pepsina","Lipasa","Tripsina"], respuesta: 0 },
+          { pregunta: "¿Qué órgano absorbe agua y forma heces?", opciones: ["Intestino grueso","Hígado","Bazo","Estómago"], respuesta: 0 },
+          { pregunta: "¿Qué órgano secreta ácido clorhídrico?", opciones: ["Estómago","Intestino","Hígado","Riñón"], respuesta: 0 },
+          { pregunta: "¿Qué órgano transforma los nutrientes absorbidos?", opciones: ["Hígado","Corazón","Estómago","Vesícula"], respuesta: 0 },
+          { pregunta: "¿Qué parte del intestino tiene vellosidades?", opciones: ["Delgado","Grueso","Recto","Duodeno"], respuesta: 0 },
+          { pregunta: "¿Qué órgano produce enzimas digestivas?", opciones: ["Páncreas","Riñón","Corazón","Hígado"], respuesta: 0 }
+        ].map(mapOldSchema)
+      },
+
+      /* 2 - CIRCULATORIO (10) */
+      {
+        name: "Sistema Circulatorio",
+        text:
+`El sistema circulatorio distribuye oxígeno y nutrientes a las células y recoge dióxido de carbono y desechos. El corazón bombea sangre a través de arterias, venas y capilares. La sangre también transporta hormonas y colabora en la regulación térmica y del pH, manteniendo la homeostasis.`,
+        questions: [
+          { pregunta: "¿Cuál es el órgano principal del sistema circulatorio?", opciones: ["Pulmones","Corazón","Hígado","Cerebro"], respuesta: 1 },
+          { pregunta: "¿Qué vasos llevan sangre del corazón al cuerpo?", opciones: ["Venas","Arterias","Capilares","Vénulas"], respuesta: 1 },
+          { pregunta: "¿Qué célula transporta oxígeno?", opciones: ["Glóbulos blancos","Plaquetas","Glóbulos rojos","Plasma"], respuesta: 2 },
+          { pregunta: "¿Qué lado del corazón bombea sangre a los pulmones?", opciones: ["Derecho","Izquierdo","Ambos","Ninguno"], respuesta: 0 },
+          { pregunta: "¿Qué divide el corazón en dos mitades?", opciones: ["Aurículas","Ventrículos","Tabique","Diafragma"], respuesta: 2 },
+          { pregunta: "¿Qué vasos devuelven sangre al corazón?", opciones: ["Arterias","Venas","Capilares","Arteriolas"], respuesta: 1 },
+          { pregunta: "¿Cómo se llama la sangre pobre en oxígeno?", opciones: ["Sangre arterial","Sangre venosa","Sangre roja","Sangre rica"], respuesta: 1 },
+          { pregunta: "¿Qué transporta el plasma?", opciones: ["Glucosa","Hormonas","Proteínas","Todo lo anterior"], respuesta: 3 },
+          { pregunta: "¿Qué cavidades reciben la sangre en el corazón?", opciones: ["Aurículas","Ventrículos","Arterias","Capilares"], respuesta: 0 },
+          { pregunta: "¿Qué presión mide el corazón al latir?", opciones: ["Diastólica","Sistólica","Pulmonar","Arterial"], respuesta: 1 }
+        ].map(mapOldSchema)
+      },
+
+      /* 3 - RESPIRATORIO (10) */
+      {
+        name: "Sistema Respiratorio",
+        text:
+`El sistema respiratorio permite el intercambio gaseoso: el oxígeno ingresa al organismo y el dióxido de carbono se expulsa. El aire entra por nariz o boca, pasa por faringe, laringe y tráquea hasta los pulmones. En los alvéolos, finísimos sacos, se realiza el intercambio con la sangre, proceso asistido por el diafragma.`,
+        questions: [
+          { pregunta: "¿Cuál es el órgano principal de la respiración?", opciones: ["Corazón","Pulmones","Hígado","Estómago"], respuesta: 1 },
+          { pregunta: "¿Por dónde entra el aire?", opciones: ["Pulmones","Tráquea","Nariz y boca","Diafragma"], respuesta: 2 },
+          { pregunta: "¿Dónde ocurre el intercambio gaseoso?", opciones: ["Bronquios","Alvéolos","Diafragma","Faringe"], respuesta: 1 },
+          { pregunta: "¿Qué músculo ayuda en la respiración?", opciones: ["Diafragma","Corazón","Lengua","Esófago"], respuesta: 0 },
+          { pregunta: "¿Qué gas se elimina al respirar?", opciones: ["Oxígeno","CO₂","Nitrógeno","Hidrógeno"], respuesta: 1 },
+          { pregunta: "¿Qué parte conecta la nariz con los pulmones?", opciones: ["Esófago","Tráquea","Laringe","Bronquiolos"], respuesta: 1 },
+          { pregunta: "¿Dónde están los bronquios?", opciones: ["En el corazón","En los pulmones","En el estómago","En el hígado"], respuesta: 1 },
+          { pregunta: "¿Qué estructura evita que los alimentos entren en la tráquea?", opciones: ["Epiglotis","Lengua","Nariz","Diafragma"], respuesta: 0 },
+          { pregunta: "¿Qué gas es esencial para la respiración?", opciones: ["CO₂","Oxígeno","Nitrógeno","Helio"], respuesta: 1 },
+          { pregunta: "¿Qué recubre los pulmones?", opciones: ["Peritoneo","Pleura","Meninges","Diafragma"], respuesta: 1 }
+        ].map(mapOldSchema)
+      },
+
+      /* 4 - EXCRETOR (10) */
+      {
+        name: "Sistema Excretor",
+        text:
+`El sistema excretor elimina desechos y regula el equilibrio de agua, sales y pH. Los riñones filtran la sangre y forman orina, que pasa por los uréteres hasta la vejiga, donde se almacena y luego se expulsa por la uretra. También participa en funciones hormonales como la producción de eritropoyetina.`,
+        questions: [
+          { pregunta: "¿Cuál es el órgano principal del sistema excretor?", opciones: ["Pulmones","Riñones","Hígado","Corazón"], respuesta: 1 },
+          { pregunta: "¿Qué líquido eliminan los riñones?", opciones: ["Sudor","Orina","Sangre","Plasma"], respuesta: 1 },
+          { pregunta: "¿Qué filtra la sangre en los riñones?", opciones: ["Nefronas","Alvéolos","Plaquetas","Aurículas"], respuesta: 0 },
+          { pregunta: "¿Qué almacena la vejiga?", opciones: ["Orina","Sangre","Oxígeno","Glucosa"], respuesta: 0 },
+          { pregunta: "¿Por dónde se expulsa la orina?", opciones: ["Uréteres","Intestino","Uretra","Vesícula"], respuesta: 2 },
+          { pregunta: "¿Qué conecta riñones con la vejiga?", opciones: ["Venas","Uréteres","Uretra","Arterias"], respuesta: 1 },
+          { pregunta: "¿Qué regula la cantidad de agua en el cuerpo?", opciones: ["Pulmones","Riñones","Estómago","Corazón"], respuesta: 1 },
+          { pregunta: "¿Qué órgano también ayuda eliminando toxinas?", opciones: ["Hígado","Corazón","Bazo","Estómago"], respuesta: 0 },
+          { pregunta: "¿Qué sustancia da color a la orina?", opciones: ["Bilirrubina","Urea","Glucosa","Ácido úrico"], respuesta: 1 },
+          { pregunta: "¿Dónde se produce la orina?", opciones: ["Intestino","Nefronas","Vejiga","Pulmones"], respuesta: 1 }
+        ].map(mapOldSchema)
+      }
+    ];
+
+    // Convierte {pregunta, opciones, respuesta} a {q, options, answer}
+    function mapOldSchema(item){
+      return { q:item.pregunta, options:item.opciones, answer:item.respuesta };
+    }
+
+    // ========= Referencias DOM =========
+    const inicio = document.getElementById("inicio");
+    const levelsView = document.getElementById("levelsView");
+    const levelsContainer = document.getElementById("levels");
+    const content = document.getElementById("content");
+    const textEl = document.getElementById("text");
+    const levelTitle = document.getElementById("levelTitle");
+    const questionsEl = document.getElementById("questions");
+    const modal = document.getElementById("resultModal");
+    const resultTitle = document.getElementById("resultTitle");
+    const resultMessage = document.getElementById("resultMessage");
+    const volverNivelesBtn = document.getElementById("volverNiveles");
+
+    // ========= Estado =========
+    let currentLevel = 0;
+    let voices = [];
+    let utterance;
+    let progress = JSON.parse(localStorage.getItem("verbalProgress2")) || { unlocked: 1 };
+
+    // ========= Navegación =========
+    function irNiveles(){
+      inicio.style.display = "none";
+      levelsView.style.display = "block";
+      renderLevels();
+    }
+    function volverANiveles(){
+      stopReading();
+      content.style.display = "none";
+      volverNivelesBtn.style.display = "none";
+      levelsView.style.display = "block";
+      window.scrollTo({top:0, behavior:"smooth"});
+    }
+
+    function renderLevels(){
+      levelsContainer.innerHTML = "";
+      LEVELS.forEach((lvl, i)=>{
+        const div = document.createElement("div");
+        div.className = "level";
+        div.innerHTML = `${i+1}<br><small>${lvl.name}</small>`;
+        if (i+1 > progress.unlocked){
+          div.classList.add("locked");
+        }else{
+          div.onclick = ()=> loadLevel(i);
+        }
+        levelsContainer.appendChild(div);
+      });
+    }
+
+    function loadLevel(i){
+      currentLevel = i;
+      levelsView.style.display = "none";
+      content.style.display = "block";
+      volverNivelesBtn.style.display = "inline-block";
+
+      levelTitle.textContent = `Nivel ${i+1}: ${LEVELS[i].name}`;
+      textEl.textContent = LEVELS[i].text;
+
+      // Render preguntas
+      questionsEl.innerHTML = "";
+      LEVELS[i].questions.forEach((q, idx)=>{
+        const wrap = document.createElement("div");
+        wrap.className = "question";
+        const p = document.createElement("p");
+        p.textContent = `${idx+1}. ${q.q}`;
+        wrap.appendChild(p);
+
+        q.options.forEach((opt, j)=>{
+          const label = document.createElement("label");
+          label.className = "option";
+          label.setAttribute("for", `q${idx}_${j}`);
+
+          const input = document.createElement("input");
+          input.type = "radio";
+          input.name = `q${idx}`;
+          input.id = `q${idx}_${j}`;
+          input.value = j;
+
+          label.appendChild(input);
+          label.appendChild(document.createTextNode(opt));
+          // Aumenta el área táctil
+          label.addEventListener("click", ()=> input.focus(), {passive:true});
+          wrap.appendChild(label);
+        });
+
+        questionsEl.appendChild(wrap);
+      });
+
+      window.scrollTo({top:0, behavior:"smooth"});
+    }
+
+    // ========= Corrección =========
+    function submitAnswers(){
+      stopReading();
+
+      let correct = 0;
+      const qs = LEVELS[currentLevel].questions;
+
+      // Limpiar estilos anteriores
+      document.querySelectorAll(".option").forEach(el=>{
+        el.classList.remove("correct","wrong");
+      });
+
+      qs.forEach((q, idx)=>{
+        const selected = document.querySelector(`input[name="q${idx}"]:checked`);
+        const options = document.querySelectorAll(`input[name="q${idx}"]`);
+        if (selected && parseInt(selected.value) === q.answer) correct++;
+
+        // Pintar visualmente correcto/incorrecto
+        options.forEach(opt=>{
+          const label = opt.parentElement;
+          const val = parseInt(opt.value);
+          if (val === q.answer){
+            label.classList.add("correct");
+          }else if (selected && opt === selected && val !== q.answer){
+            label.classList.add("wrong");
+          }
+        });
+      });
+
+      const scorePct = Math.round((correct / qs.length) * 100);
+      const aprobado = scorePct >= 70;
+
+      resultTitle.textContent = aprobado ? "✅ Aprobado" : "❌ No aprobado";
+      resultMessage.textContent = `Respuestas correctas: ${correct}/${qs.length} — Puntaje: ${scorePct}%`;
+      modal.style.display = "flex";
+
+      if (aprobado){
+        if (progress.unlocked < currentLevel + 2){
+          progress.unlocked = currentLevel + 2;
+          localStorage.setItem("verbalProgress2", JSON.stringify(progress));
+        }
+        // Avance automático tras 2s
+        setTimeout(()=>{
+          closeModal();
+          if (currentLevel + 1 < LEVELS.length){
+            loadLevel(currentLevel + 1);
+          }else{
+            volverANiveles();
+          }
+        }, 2000);
+      }else{
+        renderLevels();
+      }
+    }
+
+    function closeModal(){ modal.style.display = "none"; }
+
+    // ========= Lectura en voz =========
+    function loadVoices(){ voices = speechSynthesis.getVoices(); }
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+
+    function speakText(){
+      stopReading();
+      utterance = new SpeechSynthesisUtterance(textEl.textContent);
+      utterance.lang = "es-ES";
+      const es = speechSynthesis.getVoices().filter(v=>v.lang.startsWith("es"));
+      if (es.length) utterance.voice = es[0];
+      speechSynthesis.speak(utterance);
+    }
+    function pauseResume(){
+      if (!speechSynthesis.speaking) return;
+      if (speechSynthesis.paused) speechSynthesis.resume();
+      else speechSynthesis.pause();
+    }
+    function stopReading(){
+      if (speechSynthesis.speaking) speechSynthesis.cancel();
+    }
+
+    // ========= Inicio =========
+    renderLevels();
+  </script>
+</body>
+</html>
+
+
+

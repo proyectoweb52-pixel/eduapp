@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Michi de Nutrición – 4° Secundaria</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: linear-gradient(180deg, #e6f4ff, #ffffff);
+      color: #222;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #1976d2;
+      margin-bottom: 10px;
+    }
+
+    .scoreboard {
+      display: flex;
+      gap: 30px;
+      margin-bottom: 20px;
+      font-size: 1.2em;
+    }
+
+    .scoreboard span {
+      background: #ffffff;
+      padding: 10px 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-template-rows: repeat(3, 100px);
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .cell {
+      background: #ffffff;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5em;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      transition: background 0.3s;
+      user-select: none;
+    }
+
+    .cell:hover {
+      background: #e3f2fd;
+    }
+
+    .cell.taken {
+      cursor: not-allowed;
+    }
+
+    .controls {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    button {
+      background: #6a1b9a;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 1em;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #8e24aa;
+    }
+
+    .question-box {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      max-width: 350px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .options button {
+      background: #1976d2;
+      margin-top: 8px;
+      width: 100%;
+    }
+
+    .options button:hover {
+      background: #1565c0;
+    }
+
+    .message {
+      font-size: 1.2em;
+      margin: 10px 0;
+      font-weight: bold;
+    }
+
+    .correct {
+      color: #2e7d32;
+    }
+    .incorrect {
+      color: #c62828;
+    }
+
+    @media (max-width: 500px) {
+      .board {
+        grid-template-columns: repeat(3, 80px);
+        grid-template-rows: repeat(3, 80px);
+      }
+      .cell {
+        font-size: 2em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Michi de Nutrición</h1>
+
+  <div class="scoreboard">
+    <span id="scoreX">Jugador X: 0</span>
+    <span id="scoreO">Jugador O: 0</span>
+  </div>
+
+  <div class="board" id="board"></div>
+
+  <div class="controls">
+    <button onclick="newRound()">🔄 Nueva Ronda</button>
+    <button onclick="resetScores()">♻️ Reiniciar Marcador</button>
+  </div>
+
+  <div class="question-box" id="questionBox" style="display:none;">
+    <div id="questionText"></div>
+    <div class="options" id="options"></div>
+  </div>
+
+  <div class="message" id="message"></div>
+
+  <script>
+    const boardElement = document.getElementById("board");
+    const messageElement = document.getElementById("message");
+    const questionBox = document.getElementById("questionBox");
+    const questionText = document.getElementById("questionText");
+    const optionsDiv = document.getElementById("options");
+    const scoreXElement = document.getElementById("scoreX");
+    const scoreOElement = document.getElementById("scoreO");
+
+    let currentPlayer = "X";
+    let board = Array(9).fill(null);
+    let gameActive = true;
+    let waitingCell = null;
+    let scores = JSON.parse(localStorage.getItem("scores")) || { X: 0, O: 0 };
+
+    function updateScores() {
+      scoreXElement.textContent = `Jugador X: ${scores.X}`;
+      scoreOElement.textContent = `Jugador O: ${scores.O}`;
+      localStorage.setItem("scores", JSON.stringify(scores));
+    }
+
+    const QUESTIONS = [
+      { q: "¿Qué es la nutrición?", o: ["El proceso de obtener y aprovechar nutrientes", "El acto de respirar", "El movimiento del cuerpo"], a: 0 },
+      { q: "¿Qué tipo de nutrición realizan las plantas verdes?", o: ["Heterótrofa", "Autótrofa", "Omnívora"], a: 1 },
+      { q: "¿Qué tipo de nutrición tienen los humanos?", o: ["Autótrofa", "Heterótrofa", "Fotosintética"], a: 1 },
+      { q: "¿Qué función cumple la digestión?", o: ["Transformar alimentos en nutrientes", "Transportar oxígeno", "Eliminar desechos"], a: 0 },
+      { q: "¿Qué órgano principal participa en la absorción de nutrientes?", o: ["Estómago", "Intestino delgado", "Hígado"], a: 1 },
+      { q: "¿Cuál es la función del sistema circulatorio en la nutrición?", o: ["Distribuir nutrientes y oxígeno", "Producir hormonas", "Generar energía"], a: 0 },
+      { q: "¿Qué gas necesitamos para la respiración celular?", o: ["Oxígeno", "Dióxido de carbono", "Nitrógeno"], a: 0 },
+      { q: "¿Qué desecho elimina principalmente el sistema respiratorio?", o: ["Amoniaco", "CO₂", "Sales"], a: 1 },
+      { q: "¿Qué órganos forman el sistema excretor principal?", o: ["Riñones", "Pulmones", "Huesos"], a: 0 },
+      { q: "¿Qué son los probióticos?", o: ["Microorganismos benéficos", "Vitaminas", "Enzimas digestivas"], a: 0 },
+      { q: "¿Qué vitamina es importante para la visión?", o: ["Vitamina A", "Vitamina C", "Vitamina K"], a: 0 },
+      { q: "¿Qué vitamina ayuda a la coagulación sanguínea?", o: ["Vitamina D", "Vitamina K", "Vitamina B12"], a: 1 },
+      { q: "¿Qué mineral fortalece huesos y dientes?", o: ["Hierro", "Calcio", "Potasio"], a: 1 },
+      { q: "¿Por qué debemos nutrirnos?", o: ["Para obtener energía y reparar tejidos", "Solo para no tener hambre", "Para respirar"], a: 0 },
+      { q: "¿Qué órgano produce la bilis para ayudar en la digestión?", o: ["Hígado", "Páncreas", "Estómago"], a: 0 },
+      { q: "¿Qué vitamina fortalece el sistema inmune?", o: ["Vitamina C", "Vitamina D", "Vitamina E"], a: 0 },
+      { q: "¿Qué nutriente es la principal fuente de energía?", o: ["Proteínas", "Carbohidratos", "Vitaminas"], a: 1 },
+      { q: "¿Cuál es la función principal de las proteínas?", o: ["Regular temperatura", "Construir y reparar tejidos", "Dar sabor"], a: 1 },
+      { q: "¿Dónde ocurre la respiración celular?", o: ["Mitocondrias", "Núcleo", "Citoplasma"], a: 0 },
+      { q: "¿Qué vitamina se obtiene principalmente de la exposición al sol?", o: ["Vitamina B12", "Vitamina D", "Vitamina A"], a: 1 }
+    ];
+
+    function renderBoard() {
+      boardElement.innerHTML = "";
+      board.forEach((cell, i) => {
+        const div = document.createElement("div");
+        div.classList.add("cell");
+        if (cell) {
+          div.textContent = cell;
+          div.classList.add("taken");
+        } else {
+          div.addEventListener("click", () => cellClicked(i));
+        }
+        boardElement.appendChild(div);
+      });
+    }
+
+    function cellClicked(i) {
+      if (!gameActive || board[i]) return;
+      waitingCell = i;
+      askQuestion();
+    }
+
+    function askQuestion() {
+      const q = QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)];
+      questionBox.style.display = "block";
+      questionText.textContent = q.q;
+      optionsDiv.innerHTML = "";
+      q.o.forEach((opt, idx) => {
+        const btn = document.createElement("button");
+        btn.textContent = opt;
+        btn.onclick = () => checkAnswer(idx === q.a);
+        optionsDiv.appendChild(btn);
+      });
+    }
+
+    function checkAnswer(correct) {
+      questionBox.style.display = "none";
+      if (correct) {
+        board[waitingCell] = currentPlayer;
+        renderBoard();
+        if (checkWin()) {
+          messageElement.textContent = `Jugador ${currentPlayer} gana la ronda!`;
+          messageElement.className = "message correct";
+          scores[currentPlayer]++;
+          updateScores();
+          gameActive = false;
+          return;
+        }
+        if (board.every(c => c)) {
+          messageElement.textContent = "¡Empate!";
+          messageElement.className = "message";
+          gameActive = false;
+          return;
+        }
+        switchPlayer();
+      } else {
+        messageElement.textContent = `Respuesta incorrecta. Pierde el turno ${currentPlayer}`;
+        messageElement.className = "message incorrect";
+        switchPlayer();
+      }
+    }
+
+    function switchPlayer() {
+      currentPlayer = currentPlayer === "X" ? "O" : "X";
+      messageElement.textContent += ` → Turno de ${currentPlayer}`;
+    }
+
+    function checkWin() {
+      const wins = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],
+        [0, 4, 8], [2, 4, 6]
+      ];
+      return wins.some(([a, b, c]) => board[a] && board[a] === board[b] && board[a] === board[c]);
+    }
+
+    function newRound() {
+      board = Array(9).fill(null);
+      gameActive = true;
+      messageElement.textContent = `Comienza el jugador ${currentPlayer}`;
+      renderBoard();
+    }
+
+    function resetScores() {
+      scores = { X: 0, O: 0 };
+      updateScores();
+      messageElement.textContent = "Marcador reiniciado.";
+    }
+
+    updateScores();
+    renderBoard();
+    messageElement.textContent = `Comienza el jugador ${currentPlayer}`;
+  </script>
+</body>
+</html>
+

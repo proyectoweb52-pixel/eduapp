@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>🥗 Maestros de la Dieta</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<style>
+  :root{
+    --bg1:#43a047; /* green */
+    --bg2:#1e88e5; /* blue */
+    --card: rgba(255,255,255,0.15);
+    --card-strong: rgba(255,255,255,0.25);
+    --text:#ffffff;
+    --accent:#ffd54f;
+    --accent-2:#90caf9;
+    --ok:#c8e6c9;
+    --bad:#ffcdd2;
+    --shadow: 0 10px 25px rgba(0,0,0,0.2);
+    --round:16px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell, Noto Sans, Arial, sans-serif;
+    background: linear-gradient(135deg, var(--bg1), var(--bg2));
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+  }
+  header{
+    position:sticky; top:0; z-index:10;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 16px; background:rgba(0,0,0,0.25); backdrop-filter: blur(6px);
+  }
+  header h1{margin:0; font-size:1.25rem}
+  header .nav-btn{
+    border:none; border-radius:999px; padding:10px 14px; background:var(--accent-2); color:#003366; font-weight:700;
+    box-shadow:var(--shadow); cursor:pointer;
+  }
+  .container{padding:18px; max-width:1100px; margin:0 auto;}
+  .grid{
+    display:grid; gap:16px;
+    grid-template-columns: repeat(12, 1fr);
+  }
+  .card{
+    background:var(--card); border-radius:var(--round); padding:16px; box-shadow:var(--shadow);
+  }
+  .menu-card{
+    grid-column: span 12;
+    display:flex; align-items:center; gap:12px; cursor:pointer;
+    transition: transform .15s ease, background .3s;
+    padding:18px;
+  }
+  .menu-card:hover{transform: translateY(-3px); background:var(--card-strong)}
+  .menu-card .emoji{font-size:2.2rem}
+  .menu-card h3{margin:0 0 6px; font-size:1.2rem}
+  .menu-card p{margin:0; opacity:.95; font-size:0.98rem}
+  @media(min-width:640px){ .menu-card{grid-column: span 6;} }
+  @media(min-width:980px){ .menu-card{grid-column: span 3;} }
+
+  .btn{
+    display:inline-block; border:none; border-radius:12px; padding:12px 16px; background:var(--accent);
+    color:#222; font-weight:700; cursor:pointer; box-shadow:var(--shadow);
+  }
+  .btn.secondary{ background:var(--accent-2); color:#003366}
+  .btn.ghost{ background:transparent; border:2px solid rgba(255,255,255,.5); color:#fff}
+  .toolbar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px;}
+  .pill{background:rgba(0,0,0,.3); padding:6px 10px; border-radius:999px; font-size:.95rem}
+  .feedback{font-weight:700; margin-top:10px}
+  .ok{ color: var(--ok);}
+  .bad{ color: var(--bad);}
+
+  /* Hide sections by default; showSection will toggle 'hidden' class */
+  section { display: none; }
+
+  /* --- MEMORIA --- */
+  #memoria-board{
+    display:grid; gap:10px; margin-top:12px;
+    grid-template-columns: repeat(4, 1fr);
+  }
+  @media(min-width:780px){ #memoria-board{ grid-template-columns: repeat(5, 1fr);} }
+  .card-mem{
+    background:rgba(255,255,255,.1); border-radius:14px; min-height:84px; display:flex; align-items:center; justify-content:center;
+    font-weight:700; text-align:center; padding:10px; cursor:pointer; user-select:none; position:relative; transition: transform .15s;
+  }
+  .card-mem.flipped, .card-mem.matched{ background:rgba(255,255,255,.92); color:#222;}
+  .card-mem.matched{ outline:3px solid rgba(255,255,255,.8)}
+  .legend{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; font-size:.9rem; opacity:.95}
+
+  /* --- DRAG & DROP --- */
+  #drag-area{ display:grid; gap:14px; grid-template-columns: 1fr; }
+  @media(min-width:900px){ #drag-area{ grid-template-columns: 1fr 1fr; } }
+  .drag-pool, .drop-cols{ background:var(--card-strong); border-radius:var(--round); padding:14px;}
+  .pool-items{ display:flex; flex-wrap:wrap; gap:8px; }
+  .food{
+    background:#fff; color:#333; border-radius:999px; padding:8px 12px; box-shadow:var(--shadow);
+    display:flex; align-items:center; gap:6px; cursor:grab; touch-action:none;
+    user-select:none;
+  }
+  .food.dragging{ opacity:.7; transform:scale(.98)}
+  .drop-cols{ display:grid; gap:12px; grid-template-columns: repeat(2, 1fr); }
+  @media(min-width:620px){ .drop-cols{ grid-template-columns: repeat(3, 1fr);} }
+  .dropzone{
+    background:rgba(0,0,0,.15); border:2px dashed rgba(255,255,255,.45); border-radius:12px; padding:10px; min-height:110px;
+  }
+  .dropzone h4{ margin:0 0 8px 0}
+  .slot{ display:flex; flex-wrap:wrap; gap:6px;}
+  .mini{ font-size:.85rem; }
+  .tap-tip{ font-size:.9rem; opacity:.85; margin-top:8px}
+
+  /* --- CASOS --- */
+  .case-wrap{
+    display:flex; flex-wrap:wrap; gap:16px;
+  }
+  .case-text{
+    flex:1; min-width:260px; background:var(--card-strong); border-radius:var(--round); padding:14px;
+  }
+  .case-opts{ flex:1; min-width:260px; display:flex; flex-direction:column; gap:10px}
+  .case-opts .btn{ width:100%; text-align:center}
+
+  /* --- QUIZ --- */
+  .qbox{ background:var(--card); border-radius:var(--round); padding:16px; }
+  .qopts{ display:flex; flex-direction:column; gap:10px; margin-top:10px}
+  .scorebox{ background:rgba(0,0,0,.35); border-radius:999px; padding:8px 14px; display:inline-flex; gap:10px; align-items:center }
+
+  /* small screens */
+  @media (max-width:520px){
+    header h1{font-size:1rem}
+    .menu-card{padding:14px}
+    .menu-card .emoji{font-size:1.6rem}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🥗 Maestros de la Dieta</h1>
+  <div style="display:flex; gap:8px; align-items:center">
+    <button class="nav-btn" onclick="showSection('menu')">🏠 Menú</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- ================== MENÚ ================== -->
+  <section id="menu" aria-label="Menú principal">
+    <div class="grid">
+      <div class="menu-card card" onclick="startMemoria()" role="button" tabindex="0">
+        <div class="emoji">🧠</div>
+        <div>
+          <h3>Memoria Nutricional</h3>
+          <p>Empareja nutriente ↔ función (10 pares). Colores por pareja.</p>
+        </div>
+      </div>
+
+      <div class="menu-card card" onclick="startDragDrop()" role="button" tabindex="0">
+        <div class="emoji">🥦</div>
+        <div>
+          <h3>Clasificación de Alimentos</h3>
+          <p>Arrastra ~40 alimentos a su categoría. También puedes tocar para asignar.</p>
+        </div>
+      </div>
+
+      <div class="menu-card card" onclick="startCasos()" role="button" tabindex="0">
+        <div class="emoji">🧑‍⚕️</div>
+        <div>
+          <h3>Casos de Dieta Saludable</h3>
+          <p>10 casos narrados con emojis. Elige la mejor recomendación.</p>
+        </div>
+      </div>
+
+      <div class="menu-card card" onclick="startQuiz()" role="button" tabindex="0">
+        <div class="emoji">🎯</div>
+        <div>
+          <h3>Reto Final (Quiz)</h3>
+          <p>Preguntas generales aleatorias. Nota de 0 a 20.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================== MEMORIA ================== -->
+  <section id="memoria" aria-label="Memoria nutricional">
+    <div class="toolbar">
+      <span class="pill">Pares encontrados: <b id="mem-found">0</b>/10</span>
+      <div style="margin-left:auto; display:flex; gap:8px;">
+        <button class="btn secondary" onclick="startMemoria()">🔄 Reiniciar</button>
+        <button class="btn ghost" onclick="showSection('menu')">🔙 Volver al menú</button>
+      </div>
+    </div>
+    <div id="memoria-board"></div>
+    <div class="legend" id="mem-legend"></div>
+  </section>
+
+  <!-- ================== DRAG & DROP ================== -->
+  <section id="drag" aria-label="Clasificación de alimentos">
+    <div class="toolbar">
+      <span class="pill">Correctos: <b id="drag-correct">0</b></span>
+      <span class="pill">Clasificados: <b id="drag-done">0</b>/40</span>
+      <div style="margin-left:auto; display:flex; gap:8px;">
+        <button class="btn secondary" onclick="startDragDrop()">🔄 Reiniciar</button>
+        <button class="btn ghost" onclick="showSection('menu')">🔙 Volver al menú</button>
+      </div>
+    </div>
+    <div id="drag-area">
+      <div class="drag-pool card">
+        <h3>🧺 Alimentos para clasificar</h3>
+        <div class="tap-tip">Sugerencia móvil: toca un alimento y luego toca una categoría para asignarlo.</div>
+        <div id="pool" class="pool-items" style="margin-top:10px"></div>
+      </div>
+      <div class="drop-cols card" style="padding-top:22px;">
+        <div class="dropzone" data-cat="Carbohidratos">
+          <h4>🍞 Carbohidratos</h4>
+          <div class="slot" id="slot-Carbohidratos"></div>
+        </div>
+        <div class="dropzone" data-cat="Proteínas">
+          <h4>🍗 Proteínas</h4>
+          <div class="slot" id="slot-Proteínas"></div>
+        </div>
+        <div class="dropzone" data-cat="Grasas">
+          <h4>🥑 Grasas</h4>
+          <div class="slot" id="slot-Grasas"></div>
+        </div>
+        <div class="dropzone" data-cat="Vitaminas">
+          <h4>🍊 Vitaminas</h4>
+          <div class="slot" id="slot-Vitaminas"></div>
+        </div>
+        <div class="dropzone" data-cat="Minerales">
+          <h4>🧂 Minerales</h4>
+          <div class="slot" id="slot-Minerales"></div>
+        </div>
+      </div>
+    </div>
+    <div id="drag-feedback" class="feedback"></div>
+  </section>
+
+  <!-- ================== CASOS ================== -->
+  <section id="casos" aria-label="Casos de dieta saludable">
+    <div class="toolbar">
+      <span class="pill">Caso <b id="case-num">0</b>/10</span>
+      <span class="pill">Aciertos: <b id="case-ok">0</b></span>
+      <div style="margin-left:auto; display:flex; gap:8px;">
+        <button class="btn secondary" onclick="startCasos()">🔄 Reiniciar</button>
+        <button class="btn ghost" onclick="showSection('menu')">🔙 Volver al menú</button>
+      </div>
+    </div>
+    <div class="case-wrap">
+      <div class="case-text" id="case-text">Selecciona para comenzar…</div>
+      <div class="case-opts" id="case-opts"></div>
+    </div>
+    <div id="case-feedback" class="feedback"></div>
+  </section>
+
+  <!-- ================== QUIZ ================== -->
+  <section id="quiz" aria-label="Reto final">
+    <div class="toolbar">
+      <span class="scorebox">
+        <span>Pregunta <b id="q-num">0</b>/10</span>
+        <span>| Nota: <b id="q-score">0</b>/20</span>
+      </span>
+      <div style="margin-left:auto; display:flex; gap:8px;">
+        <button class="btn secondary" onclick="startQuiz()">🔄 Reiniciar</button>
+        <button class="btn ghost" onclick="showSection('menu')">🔙 Volver al menú</button>
+      </div>
+    </div>
+    <div class="qbox" id="q-box"></div>
+    <div class="feedback" id="q-feedback"></div>
+  </section>
+
+</div>
+
+<script>
+/* ----------------------- UTIL ----------------------- */
+function showSection(id){
+  // oculta todas las secciones y muestra solo la seleccionada
+  const sections = ['menu','memoria','drag','casos','quiz'];
+  for(const s of sections){
+    const el = document.getElementById(s);
+    if(el) el.style.display = (s === id) ? 'block' : 'none';
+  }
+  // limpiar feedbacks cada vez que entramos
+  const fids = ['drag-feedback','case-feedback','q-feedback'];
+  fids.forEach(fid => { const el=document.getElementById(fid); if(el) el.innerHTML=''; });
+}
+
+/* shuffle util */
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+/* =====================================================
+   =============== 1) MEMORIA NUTRICIONAL ==============
+   ===================================================== */
+
+const MEM_PAIRS = [
+  {name:'Carbohidratos', func:'Energía inmediata (4 kcal/g).', color:'#bbdefb'},
+  {name:'Proteínas', func:'Construcción y reparación de tejidos (4 kcal/g).', color:'#c8e6c9'},
+  {name:'Grasas', func:'Reserva energética y hormonas (9 kcal/g).', color:'#ffe0b2'},
+  {name:'Fibra', func:'Mejora digestión y saciedad.', color:'#d1c4e9'},
+  {name:'Vitamina C', func:'Defensas y cicatrización.', color:'#ffcdd2'},
+  {name:'Vitamina A', func:'Visión y piel.', color:'#fff9c4'},
+  {name:'Calcio', func:'Huesos y dientes.', color:'#e1f5fe'},
+  {name:'Hierro', func:'Transporte de oxígeno (hemoglobina).', color:'#f8bbd0'},
+  {name:'Agua', func:'Hidratación y transporte de nutrientes.', color:'#b3e5fc'},
+  {name:'Omega-3', func:'Salud cardiovascular y cerebro.', color:'#c5e1a5'},
+];
+
+let memFirst=null, memLock=false, memFound=0;
+
+function startMemoria(){
+  showSection('memoria');
+  const board = document.getElementById('memoria-board');
+  const legend = document.getElementById('mem-legend');
+  const foundEl = document.getElementById('mem-found');
+  board.innerHTML=''; legend.innerHTML=''; foundEl.textContent='0';
+  memFirst=null; memLock=false; memFound=0;
+
+  let cards=[];
+  MEM_PAIRS.forEach((p,idx)=>{
+    cards.push({id:`n-${idx}`, type:'name', text:`${p.name}`, color:p.color});
+    cards.push({id:`f-${idx}`, type:'func', text:`${p.func}`, color:p.color});
+    const tag=document.createElement('span');
+    tag.className='pill';
+    tag.style.background=p.color;
+    tag.style.color='#222';
+    tag.style.padding='6px 8px';
+    tag.style.borderRadius='8px';
+    tag.textContent=p.name;
+    legend.appendChild(tag);
+  });
+  cards=shuffle(cards);
+
+  cards.forEach(c=>{
+    const div=document.createElement('div');
+    div.className='card-mem';
+    div.dataset.id=c.id;
+    div.dataset.color=c.color;
+    div.dataset.pair = c.id.split('-')[1];
+    div.style.border = `3px solid transparent`;
+    div.onclick=()=>memFlip(div, c);
+    board.appendChild(div);
+  });
+}
+
+function memFlip(el, data){
+  if(memLock || el.classList.contains('matched')) return;
+  el.classList.add('flipped');
+  el.style.borderColor = data.color;
+  el.textContent = data.text;
+
+  if(!memFirst){ memFirst = el; return; }
+
+  memLock=true;
+  const samePair = memFirst.dataset.pair === el.dataset.pair && memFirst!==el;
+  if(samePair){
+    setTimeout(()=>{
+      memFirst.classList.remove('flipped'); el.classList.remove('flipped');
+      memFirst.classList.add('matched'); el.classList.add('matched');
+      memFirst.style.background = el.style.background = '#fff';
+      memFirst.style.color = el.style.color = '#333';
+      memFirst = null; memLock=false; memFound++;
+      document.getElementById('mem-found').textContent=memFound;
+      // si encuentra todas, mensaje breve
+      if(memFound===MEM_PAIRS.length){
+        setTimeout(()=> alert('🎉 ¡Encontraste todos los pares!'), 200);
+      }
+    }, 250);
+  } else {
+    setTimeout(()=>{
+      memFirst.classList.remove('flipped'); el.classList.remove('flipped');
+      memFirst.style.borderColor='transparent'; el.style.borderColor='transparent';
+      memFirst.textContent=''; el.textContent='';
+      memFirst = null; memLock=false;
+    }, 700);
+  }
+}
+
+/* =====================================================
+   ============ 2) CLASIFICACIÓN DRAG & DROP ===========
+   ===================================================== */
+
+const FOODS = [
+  // Carbohidratos
+  {emoji:'🍞', name:'Pan', cat:'Carbohidratos'},
+  {emoji:'🍚', name:'Arroz', cat:'Carbohidratos'},
+  {emoji:'🍝', name:'Pasta', cat:'Carbohidratos'},
+  {emoji:'🥔', name:'Papa', cat:'Carbohidratos'},
+  {emoji:'🌽', name:'Maíz', cat:'Carbohidratos'},
+  {emoji:'🍌', name:'Plátano', cat:'Carbohidratos'},
+  {emoji:'🥖', name:'Baguette', cat:'Carbohidratos'},
+  {emoji:'🫓', name:'Tortilla', cat:'Carbohidratos'},
+
+  // Proteínas
+  {emoji:'🍗', name:'Pollo', cat:'Proteínas'},
+  {emoji:'🥩', name:'Carne', cat:'Proteínas'},
+  {emoji:'🐟', name:'Pescado', cat:'Proteínas'},
+  {emoji:'🥚', name:'Huevo', cat:'Proteínas'},
+  {emoji:'🫘', name:'Legumbres', cat:'Proteínas'},
+  {emoji:'🧀', name:'Queso', cat:'Proteínas'},
+  {emoji:'🥛', name:'Leche', cat:'Proteínas'},
+  {emoji:'🌰', name:'Nueces', cat:'Proteínas'},
+
+  // Grasas
+  {emoji:'🥑', name:'Palta/Aguacate', cat:'Grasas'},
+  {emoji:'🫒', name:'Aceite de oliva', cat:'Grasas'},
+  {emoji:'🧈', name:'Mantequilla', cat:'Grasas'},
+  {emoji:'🥜', name:'Maní', cat:'Grasas'},
+  {emoji:'🐟', name:'Salmón graso', cat:'Grasas'},
+  {emoji:'🍫', name:'Chocolate', cat:'Grasas'},
+  {emoji:'🥓', name:'Tocino', cat:'Grasas'},
+  {emoji:'🥥', name:'Coco', cat:'Grasas'},
+
+  // Vitaminas
+  {emoji:'🍊', name:'Naranja (Vit C)', cat:'Vitaminas'},
+  {emoji:'🥕', name:'Zanahoria (Vit A)', cat:'Vitaminas'},
+  {emoji:'🍓', name:'Fresa (Vit C)', cat:'Vitaminas'},
+  {emoji:'🥦', name:'Brócoli (Vit C/K)', cat:'Vitaminas'},
+  {emoji:'🍅', name:'Tomate (Vit A/C)', cat:'Vitaminas'},
+  {emoji:'🥬', name:'Espinaca (Ácido fólico)', cat:'Vitaminas'},
+  {emoji:'🍇', name:'Uvas (Antioxidantes)', cat:'Vitaminas'},
+  {emoji:'🍎', name:'Manzana (Vit C)', cat:'Vitaminas'},
+
+  // Minerales
+  {emoji:'🧂', name:'Sal yodo (Yodo)', cat:'Minerales'},
+  {emoji:'🥛', name:'Leche (Calcio)', cat:'Minerales'},
+  {emoji:'🥬', name:'Acelga (Hierro)', cat:'Minerales'},
+  {emoji:'🐚', name:'Mariscos (Zinc)', cat:'Minerales'},
+  {emoji:'🍌', name:'Plátano (Potasio)', cat:'Minerales'},
+  {emoji:'🥜', name:'Semillas (Magnesio)', cat:'Minerales'},
+  {emoji:'🐟', name:'Pescado (Selenio)', cat:'Minerales'},
+  {emoji:'💧', name:'Agua (Electrolitos)', cat:'Minerales'}
+]; // 40 elementos
+
+let dragCorrect=0, dragDone=0, selectedFoodForTap=null;
+
+function startDragDrop(){
+  showSection('drag');
+  dragCorrect=0; dragDone=0; selectedFoodForTap=null;
+  document.getElementById('drag-correct').textContent=dragCorrect;
+  document.getElementById('drag-done').textContent=dragDone;
+
+  // limpiar slots
+  document.querySelectorAll('.slot').forEach(s=>s.innerHTML='');
+
+  const pool = document.getElementById('pool');
+  pool.innerHTML='';
+  shuffle(FOODS).forEach((f,idx)=>{
+    const chip=document.createElement('div');
+    chip.className='food mini';
+    chip.textContent = `${f.emoji} ${f.name}`;
+    chip.draggable = true;
+    chip.dataset.cat = f.cat;
+    chip.dataset.id = 'food-'+idx;
+
+    // HTML5 Drag
+    chip.addEventListener('dragstart', e=>{
+      chip.classList.add('dragging');
+      e.dataTransfer.setData('text/plain', JSON.stringify({id:chip.dataset.id, cat:f.cat, label:chip.textContent}));
+    });
+    chip.addEventListener('dragend', ()=> chip.classList.remove('dragging'));
+
+    // Tap-to-assign fallback
+    chip.addEventListener('click', ()=>{
+      selectedFoodForTap = chip;
+      document.querySelectorAll('.food').forEach(x=>x.style.outline='none');
+      chip.style.outline='3px solid #ffeb3b';
+      document.getElementById('drag-feedback').innerHTML = `👉 Toca una categoría para asignar <b>${chip.textContent}</b>`;
+    });
+
+    pool.appendChild(chip);
+  });
+
+  // Preparar dropzones
+  document.querySelectorAll('.dropzone').forEach(zone=>{
+    zone.addEventListener('dragover', e=>e.preventDefault());
+    zone.addEventListener('drop', e=>{
+      e.preventDefault();
+      const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+      const chip = Array.from(document.querySelectorAll('.food')).find(el=>el.dataset.id===data.id);
+      if(!chip) return;
+      handleAssign(chip, zone.dataset.cat);
+    });
+
+    // soporte tap
+    zone.addEventListener('click', ()=>{
+      if(selectedFoodForTap){
+        handleAssign(selectedFoodForTap, zone.dataset.cat);
+        selectedFoodForTap = null;
+      }
+    });
+  });
+}
+
+function handleAssign(chip, targetCat){
+  const correct = chip.dataset.cat === targetCat;
+  dragDone++;
+  if(correct) dragCorrect++;
+
+  document.getElementById('drag-correct').textContent=dragCorrect;
+  document.getElementById('drag-done').textContent=dragDone;
+
+  // mover chip a la zona
+  const slot = document.getElementById('slot-'+targetCat);
+  chip.draggable=false;
+  chip.style.cursor='default';
+  chip.style.outline='none';
+  chip.style.background = correct ? '#c8e6c9' : '#ffcdd2';
+  chip.title = correct ? 'Correcto' : `Incorrecto (era: ${chip.dataset.cat})`;
+  slot.appendChild(chip);
+
+  // feedback
+  document.getElementById('drag-feedback').innerHTML = correct
+    ? `<span class="ok">✅ Correcto: ${chip.textContent} → ${targetCat}</span>`
+    : `<span class="bad">❌ Incorrecto: ${chip.textContent} → ${targetCat}. <br>Respuesta: ${chip.dataset.cat}</span>`;
+}
+
+/* =====================================================
+   ================= 3) CASOS NARRADOS =================
+   ===================================================== */
+
+const CASES = [
+  {text:"👧 María es deportista y entrena todos los días. Antes del entrenamiento necesita energía rápida. ¿Qué debe priorizar?",
+   options:["Carbohidratos complejos (arroz, pasta)","Vitaminas exclusivamente","Solo grasas"], correct:0,
+   exp:"Los carbohidratos aportan energía inmediata y son clave para rendimiento."},
+  {text:"🧑‍💼 Pedro pasa muchas horas sentado y toma mucha gaseosa. Quiere bajar azúcar. ¿Qué cambio es mejor?",
+   options:["Cambiar gaseosa por agua y frutas","Comer más grasas","Evitar verduras"], correct:0,
+   exp:"Reducir azúcar libre y preferir agua/frutas mejora salud y control de peso."},
+  {text:"🧑‍🎓 Ana está anémica (bajo hierro). ¿Qué alimentos ayudan más?",
+   options:["Legumbres y carnes rojas","Fideos blancos","Mantequilla"], correct:0,
+   exp:"Hierro hemo (carnes) y no hemo (legumbres); Vitamina C mejora su absorción."},
+  {text:"👵 Rosa tiene osteoporosis. ¿Qué debe priorizar?",
+   options:["Calcio + vitamina D","Solo carbohidratos","Grasas saturadas"], correct:0,
+   exp:"Calcio y vitamina D favorecen la salud ósea."},
+  {text:"🧑‍🍳 Luis es vegetariano y busca proteína de calidad.",
+   options:["Legumbres, tofu, quinoa","Tocino","Solo harinas"], correct:0,
+   exp:"Hay proteínas vegetales completas o combinaciones que cubren aminoácidos."},
+  {text:"🏃 Carla correrá una maratón. En la semana previa, ¿qué enfoque es adecuado?",
+   options:["Cargar carbohidratos y buena hidratación","Comer solo proteínas","Eliminar frutas"], correct:0,
+   exp:"Aumentar glucógeno muscular y agua favorece resistencia."},
+  {text:"🧑‍⚕️ Diego tiene colesterol alto. ¿Qué grasas debe preferir?",
+   options:["Insaturadas (aceite de oliva, frutos secos)","Trans y saturadas","Grasas de frituras"], correct:0,
+   exp:"Grasas insaturadas ayudan al perfil lipídico."},
+  {text:"👶 Un niño en crecimiento necesita…",
+   options:["Proteínas, calcio y energía suficientes","Solo vitaminas","Solo grasas"], correct:0,
+   exp:"Combinar macro y micro (proteínas y calcio) con energía para crecer."},
+  {text:"🤒 Laura se resfría con frecuencia. ¿Qué podría ayudar?",
+   options:["Vitamina C y A de frutas/verduras","Más azúcar","Menos agua"], correct:0,
+   exp:"Vitaminas ayudan a la función inmune; hidratación también es clave."},
+  {text:"😴 Martín está cansado y casi no desayuna. ¿Qué hábito mejorar?",
+   options:["Desayuno con carbohidratos integrales + proteína","Saltar comidas","Solo café"], correct:0,
+   exp:"Desayuno balanceado estabiliza energía y atención."}
+];
+
+let caseIndex=0, caseOk=0;
+function startCasos(){
+  showSection('casos');
+  caseIndex=0; caseOk=0;
+  document.getElementById('case-ok').textContent=caseOk;
+  document.getElementById('case-num').textContent=0;
+  nextCase();
+}
+function nextCase(){
+  const total=10;
+  if(caseIndex>=total){
+    document.getElementById('case-text').innerHTML = `<h3>🎉 ¡Terminaste los 10 casos!</h3><p>Puedes reiniciar o volver al menú.</p>`;
+    document.getElementById('case-opts').innerHTML = `<button class="btn secondary" onclick="startCasos()">🔄 Reiniciar</button>`;
+    return;
+  }
+  const c = CASES[caseIndex % CASES.length];
+  document.getElementById('case-num').textContent = (caseIndex+1);
+  document.getElementById('case-text').innerHTML = `<p>${c.text}</p>`;
+  const opts = document.getElementById('case-opts');
+  opts.innerHTML='';
+  c.options.forEach((opt,i)=>{
+    const b=document.createElement('button');
+    b.className='btn';
+    b.textContent=opt;
+    b.onclick=()=>{
+      const fb=document.getElementById('case-feedback');
+      if(i===c.correct){ caseOk++; fb.innerHTML=`<span class="ok">✅ Correcto:</span> ${c.exp}`; }
+      else{ fb.innerHTML=`<span class="bad">❌ Incorrecto:</span> ${c.exp}`; }
+      document.getElementById('case-ok').textContent=caseOk;
+      caseIndex++;
+      setTimeout(()=>{ fb.innerHTML=''; nextCase(); }, 1600);
+    };
+    opts.appendChild(b);
+  });
+}
+
+/* =====================================================
+   =================== 4) QUIZ GENERAL =================
+   ===================================================== */
+
+const QUIZ_BANK = [
+  {q:"🍞 ¿Cuál es la principal fuente de energía inmediata?", options:["Carbohidratos","Proteínas","Grasas"], answer:"Carbohidratos", exp:"Los carbohidratos son energía rápida (4 kcal/g)."},
+  {q:"🍗 ¿Qué nutriente construye y repara tejidos?", options:["Proteínas","Vitaminas","Grasas"], answer:"Proteínas", exp:"Las proteínas forman músculos, enzimas, etc."},
+  {q:"🥑 ¿Cuál aporta 9 kcal/g y sirve como reserva energética?", options:["Grasas","Carbohidratos","Minerales"], answer:"Grasas", exp:"Las grasas son la reserva densa en energía."},
+  {q:"💧 Función clave del agua:", options:["Hidratación y transporte","Energía directa","Formar huesos"], answer:"Hidratación y transporte", exp:"Agua transporta nutrientes y regula temperatura."},
+  {q:"🍊 La vitamina C ayuda principalmente en:", options:["Defensas y cicatrización","Visión nocturna","Contracción muscular"], answer:"Defensas y cicatrización", exp:"Vitamina C apoya sistema inmune y colágeno."},
+  {q:"🦴 ¿Qué mineral es clave para huesos y dientes?", options:["Calcio","Hierro","Zinc"], answer:"Calcio", exp:"Calcio fortalece la estructura ósea."},
+  {q:"🩸 ¿Cuál mineral transporta oxígeno en la sangre?", options:["Hierro","Sodio","Potasio"], answer:"Hierro", exp:"Hierro integra la hemoglobina."},
+  {q:"🍊🍓 Fuentes ricas en vitamina C:", options:["Cítricos y fresas","Carnes grasas","Mantequilla"], answer:"Cítricos y fresas", exp:"Frutas y verduras ricas en vit. C."},
+  {q:"🫘 Una buena proteína vegetal es:", options:["Legumbres","Azúcar","Aceite"], answer:"Legumbres", exp:"Legumbres aportan proteína y fibra."},
+  {q:"🫒 Para un corazón sano, preferir:", options:["Grasas insaturadas","Grasas trans","Exceso de azúcar"], answer:"Grasas insaturadas", exp:"Aceite de oliva, frutos secos, pescado."},
+  {q:"🏃 Deportista antes de entrenar prioriza:", options:["Carbohidratos","Vitaminas","Grasas trans"], answer:"Carbohidratos", exp:"Energía inmediata para el ejercicio."},
+  {q:"🍎 La fibra ayuda a:", options:["Digestión y saciedad","Aumentar azúcar rápida","Deshidratarse"], answer:"Digestión y saciedad", exp:"Mejora tránsito intestinal y controla apetito."},
+  {q:"🥦 Una comida equilibrada suele incluir:", options:["Verduras, proteína y carbohidratos integrales","Solo carbohidratos","Solo grasas"], answer:"Verduras, proteína y carbohidratos integrales", exp:"Balance de macro y micro nutrientes."},
+  {q:"☀️ La vitamina D se obtiene también de:", options:["Exposición moderada al sol","Exceso de azúcar","Sal"], answer:"Exposición moderada al sol", exp:"La piel sintetiza vitamina D con el sol."},
+  {q:"🥤 Para reducir azúcar libre se recomienda:", options:["Agua en lugar de gaseosa","Más jugos azucarados","Más postres"], answer:"Agua en lugar de gaseosa", exp:"Agua es la mejor bebida diaria."},
+  {q:"🥚 Un alimento rico en proteína animal:", options:["Huevo","Pan","Aceite"], answer:"Huevo", exp:"Huevo contiene proteína de alto valor biológico."},
+  {q:"🥗 Dieta mediterránea destaca por:", options:["Aceite de oliva, frutas, verduras y pescado","Muchos ultraprocesados","Solo carnes rojas"], answer:"Aceite de oliva, frutas, verduras y pescado", exp:"Patrón saludable y variado."},
+  {q:"🧂 Exceso de sodio puede causar:", options:["Hipertensión","Anemia","Raquitismo"], answer:"Hipertensión", exp:"Moderar la sal ayuda a la presión arterial."},
+  {q:"🍬 Consumir mucho azúcar se asocia a:", options:["Obesidad y caries","Mejor rendimiento","Más vitaminas"], answer:"Obesidad y caries", exp:"Azúcar libre en exceso perjudica salud."},
+  {q:"🥔 La papa pertenece a:", options:["Carbohidratos","Proteínas","Grasas"], answer:"Carbohidratos", exp:"Fuente de carbohidratos complejos."},
+  {q:"🥛 La leche aporta principalmente:", options:["Proteína y calcio","Azúcar libre","Grasas trans"], answer:"Proteína y calcio", exp:"Valiosa para huesos y crecimiento."},
+  {q:"🥜 Las nueces aportan:", options:["Grasas saludables y proteína","Solo azúcar","Solo agua"], answer:"Grasas saludables y proteína", exp:"También minerales y fibra."}
+];
+
+let qIndex=0, qCorrect=0, quizOrder=[];
+
+function startQuiz(){
+  showSection('quiz');
+  qIndex=0; qCorrect=0;
+  quizOrder = shuffle(QUIZ_BANK).slice(0,10);
+  document.getElementById('q-num').textContent='0';
+  document.getElementById('q-score').textContent='0';
+  document.getElementById('q-feedback').innerHTML='';
+  nextQuizQ();
+}
+function nextQuizQ(){
+  if(qIndex>=10){
+    const note = Math.round((qCorrect/10)*20);
+    const msg = note>=18 ? "✨ ¡Excelente, maestro de la dieta!" : note>=12 ? "💪 ¡Bien! Puedes mejorar un poco más." : "📘 A repasar y volver a intentar.";
+    document.getElementById('q-box').innerHTML =
+      `<h3>🎉 Ronda terminada</h3>
+       <p>Nota: <b>${note}/20</b></p>
+       <p>${msg}</p>
+       <button class="btn secondary" onclick="startQuiz()">🔄 Jugar de nuevo</button>`;
+    return;
+  }
+  const item = quizOrder[qIndex];
+  document.getElementById('q-num').textContent = (qIndex+1);
+  const box = document.getElementById('q-box');
+  box.innerHTML = `<h3>${item.q}</h3><div id="qopts" class="qopts"></div>`;
+  const opts = document.getElementById('qopts');
+  const shuffled = shuffle(item.options);
+  shuffled.forEach((opt, i)=>{
+    const b=document.createElement('button');
+    b.className='btn';
+    b.textContent=opt;
+    b.onclick=()=>{
+      const fb=document.getElementById('q-feedback');
+      const isCorrect = opt===item.answer;
+      if(isCorrect){ qCorrect++; fb.innerHTML=`<span class="ok">✅ Correcto:</span> ${item.exp}`; }
+      else{ fb.innerHTML=`<span class="bad">❌ Incorrecto:</span> ${item.exp}`; }
+      document.getElementById('q-score').textContent = Math.round((qCorrect/10)*20);
+      qIndex++;
+      setTimeout(()=>{ fb.innerHTML=''; nextQuizQ(); }, 1400);
+    };
+    opts.appendChild(b);
+  });
+}
+
+/* -------------------- INICIO -------------------- */
+showSection('menu');
+</script>
+
+</body>
+</html>
+
+

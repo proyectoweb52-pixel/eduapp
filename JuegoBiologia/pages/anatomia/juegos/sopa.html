@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Sopa de Letras - Anatomía</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      margin: 0;
+      background: linear-gradient(135deg, #e0f7fa, #f1f8e9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    header {
+      background: #00695c;
+      color: white;
+      width: 100%;
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.3rem;
+      font-weight: bold;
+    }
+    main {
+      flex: 1;
+      width: 100%;
+      max-width: 900px;
+      padding: 1rem;
+      text-align: center;
+    }
+    .grid-systems, .grid-levels {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+    .card {
+      background: white;
+      border-radius: 15px;
+      padding: 1rem;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      cursor: pointer;
+      font-weight: bold;
+      transition: transform 0.2s;
+    }
+    .card:hover { transform: scale(1.05); }
+    #gameBoard {
+      display: grid;
+      gap: 3px;
+      justify-content: center;
+      margin: 20px auto;
+      user-select: none;
+      touch-action: none;
+    }
+    .cell {
+      background: white;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 18px;
+      width: 35px;
+      height: 35px;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .cell.selected { background: #ffeb3b; transform: scale(1.1); }
+    .cell.found { background: #4caf50; color: white; }
+    #wordList {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+    #wordList span {
+      padding: 5px 10px;
+      border-radius: 6px;
+      background: #eeeeee;
+      font-weight: bold;
+    }
+    #wordList span.found { background: #4caf50; color: white; }
+    button {
+      background: #00695c;
+      color: white;
+      padding: 10px 20px;
+      margin: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #004d40; }
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top:0;left:0;width:100%;height:100%;
+      background: rgba(0,0,0,0.6);
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+      animation: pop 0.3s ease;
+    }
+    @keyframes pop {
+      from { transform: scale(0.8); opacity:0; }
+      to { transform: scale(1); opacity:1; }
+    }
+  </style>
+</head>
+<body>
+  <header>🔎 Sopa de Letras - Anatomía</header>
+  <main>
+    <!-- Selección de sistemas -->
+    <section id="view-systems">
+      <h2>Selecciona un sistema</h2>
+      <div class="grid-systems">
+        <div class="card" onclick="selectSystem('digestivo')">🍎 Digestivo</div>
+        <div class="card" onclick="selectSystem('respiratorio')">🌬️ Respiratorio</div>
+        <div class="card" onclick="selectSystem('circulatorio')">❤️ Circulatorio</div>
+        <div class="card" onclick="selectSystem('excretor')">🚽 Excretor</div>
+      </div>
+      <button onclick="goBack()">⬅️ Volver al menú de juegos</button>
+    </section>
+
+    <!-- Selección de niveles -->
+    <section id="view-levels" style="display:none;">
+      <h2 id="levelsTitle">Niveles</h2>
+      <div class="grid-levels" id="levelsGrid"></div>
+      <button onclick="showSystems()">⬅️ Sistemas</button>
+    </section>
+
+    <!-- Juego -->
+    <section id="view-game" style="display:none;">
+      <h2 id="levelTitle"></h2>
+      <div id="gameBoard"></div>
+      <div id="wordList"></div>
+      <button onclick="showLevels()">⬅️ Niveles</button>
+    </section>
+  </main>
+
+  <!-- Modal -->
+  <div class="modal" id="winModal">
+    <div class="modal-content">
+      <h2>🎉 ¡Nivel superado!</h2>
+      <p>Has encontrado todas las palabras</p>
+      <button onclick="closeModal()">Continuar</button>
+    </div>
+  </div>
+
+  <script src="palabras.js"></script>
+  <script>
+    let currentSystem="", currentLevel=0, selectedCells=[], foundWords=[];
+    let progress = JSON.parse(localStorage.getItem("sopaProgress")) || {
+      digestivo:1, respiratorio:1, circulatorio:1, excretor:1
+    };
+
+    const viewSystems=document.getElementById("view-systems");
+    const viewLevels=document.getElementById("view-levels");
+    const viewGame=document.getElementById("view-game");
+    const gameBoard=document.getElementById("gameBoard");
+    const wordList=document.getElementById("wordList");
+
+    function selectSystem(sys){
+      currentSystem=sys;
+      viewSystems.style.display="none";
+      viewLevels.style.display="block";
+      renderLevels();
+    }
+    function renderLevels(){
+      const grid=document.getElementById("levelsGrid");
+      grid.innerHTML="";
+      for(let i=1;i<=10;i++){
+        const div=document.createElement("div");
+        div.className="card";
+        div.innerText="Nivel "+i;
+        if(i<=progress[currentSystem]){
+          div.onclick=()=>loadLevel(i);
+        } else {
+          div.style.background="#ccc";
+          div.style.color="#555";
+        }
+        grid.appendChild(div);
+      }
+    }
+    function loadLevel(lvl){
+      currentLevel=lvl;
+      viewLevels.style.display="none";
+      viewGame.style.display="block";
+      generateBoard();
+    }
+    function showLevels(){
+      viewGame.style.display="none";
+      viewLevels.style.display="block";
+    }
+    function showSystems(){
+      viewLevels.style.display="none";
+      viewSystems.style.display="block";
+    }
+    function goBack(){
+      window.location.href="../index.html";
+    }
+
+    function generateBoard(){
+      gameBoard.innerHTML="";
+      wordList.innerHTML="";
+      foundWords=[];
+      document.getElementById("levelTitle").innerText=
+        "Sistema "+currentSystem+" - Nivel "+currentLevel;
+
+      const words=WORDS[currentSystem][currentLevel].map(w=>w.toUpperCase());
+      let size=10+(currentLevel-1); 
+      if(words.length>size) size=words.length+5;
+
+      let grid, success=false;
+      while(!success){
+        grid=Array.from({length:size},()=>Array(size).fill(""));
+        success=true;
+
+        const directions=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]];
+        function canPlace(word,row,col,dx,dy){
+          for(let i=0;i<word.length;i++){
+            let r=row+i*dy,c=col+i*dx;
+            if(r<0||r>=size||c<0||c>=size) return false;
+            if(grid[r][c]!=="" && grid[r][c]!==word[i]) return false;
+          }
+          return true;
+        }
+        function placeWord(word){
+          let placed=false, tries=0;
+          while(!placed && tries<500){
+            tries++;
+            let [dx,dy]=directions[Math.floor(Math.random()*directions.length)];
+            let row=Math.floor(Math.random()*size), col=Math.floor(Math.random()*size);
+            if(canPlace(word,row,col,dx,dy)){
+              for(let i=0;i<word.length;i++){
+                grid[row+i*dy][col+i*dx]=word[i];
+              }
+              placed=true;
+            }
+          }
+          return placed;
+        }
+
+        for(const w of words){
+          if(!placeWord(w)){ 
+            success=false; 
+            size++; 
+            break;
+          }
+        }
+      }
+
+      const letters="ABCDEFGHIJKLMNÑOPQRSTUVWXYZ";
+      for(let r=0;r<size;r++){
+        for(let c=0;c<size;c++){
+          if(grid[r][c]==="") grid[r][c]=letters[Math.floor(Math.random()*letters.length)];
+        }
+      }
+
+      gameBoard.style.gridTemplateColumns=`repeat(${size}, minmax(20px, 30px))`;
+      for(let r=0;r<size;r++){
+        for(let c=0;c<size;c++){
+          const div=document.createElement("div");
+          div.className="cell";
+          div.innerText=grid[r][c];
+          div.dataset.row=r; div.dataset.col=c;
+          div.addEventListener("mousedown",startSelect);
+          div.addEventListener("mouseover",extendSelect);
+          div.addEventListener("mouseup",endSelect);
+          div.addEventListener("touchstart",startSelectTouch,{passive:false});
+          div.addEventListener("touchmove",extendSelectTouch,{passive:false});
+          div.addEventListener("touchend",endSelectTouch);
+          gameBoard.appendChild(div);
+        }
+      }
+
+      words.forEach(w=>{
+        const span=document.createElement("span");
+        span.innerText=w; wordList.appendChild(span);
+      });
+    }
+
+    function startSelect(e){ e.preventDefault(); selectedCells=[e.target]; e.target.classList.add("selected"); }
+    function extendSelect(e){ if(e.buttons!==1) return; if(!selectedCells.includes(e.target)){ selectedCells.push(e.target); e.target.classList.add("selected"); } }
+    function endSelect(){ checkSelection(); }
+
+    function startSelectTouch(e){ e.preventDefault(); const t=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY); if(t&&t.classList.contains("cell")){ selectedCells=[t]; t.classList.add("selected"); } }
+    function extendSelectTouch(e){ e.preventDefault(); const t=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY); if(t&&t.classList.contains("cell")&&!selectedCells.includes(t)){ selectedCells.push(t); t.classList.add("selected"); } }
+    function endSelectTouch(){ checkSelection(); }
+
+    function checkSelection(){
+      if(selectedCells.length<2){ selectedCells.forEach(c=>c.classList.remove("selected")); selectedCells=[]; return; }
+      const str=selectedCells.map(c=>c.innerText).join(""), rev=selectedCells.map(c=>c.innerText).reverse().join("");
+      const words=WORDS[currentSystem][currentLevel].map(w=>w.toUpperCase());
+      if(words.includes(str)||words.includes(rev)){
+        selectedCells.forEach(c=>{c.classList.remove("selected"); c.classList.add("found");});
+        const w=words.includes(str)?str:rev;
+        document.querySelectorAll("#wordList span").forEach(s=>{if(s.innerText===w) s.classList.add("found");});
+        if(!foundWords.includes(w)) foundWords.push(w);
+        selectedCells=[];
+        if(foundWords.length===words.length) winLevel();
+      } else { selectedCells.forEach(c=>c.classList.remove("selected")); selectedCells=[]; }
+    }
+
+    function winLevel(){
+      const words=WORDS[currentSystem][currentLevel]||[];
+      if(words.length===0) return;
+      if(foundWords.length===words.length){
+        if(progress[currentSystem]===currentLevel && currentLevel<10){
+          progress[currentSystem]++;
+          localStorage.setItem("sopaProgress",JSON.stringify(progress));
+        }
+        document.getElementById("winModal").style.display="flex";
+        launchConfetti();
+      }
+    }
+    function closeModal(){
+      document.getElementById("winModal").style.display="none";
+      showLevels();
+    }
+
+    function launchConfetti(){
+      for(let i=0;i<50;i++){
+        const conf=document.createElement("div");
+        conf.innerText="🎉";
+        conf.style.position="fixed";
+        conf.style.left=Math.random()*100+"%";
+        conf.style.top="-20px";
+        conf.style.fontSize="20px";
+        conf.style.animation=`fall ${2+Math.random()*3}s linear forwards`;
+        document.body.appendChild(conf);
+        setTimeout(()=>conf.remove(),5000);
+      }
+    }
+    const style=document.createElement("style");
+    style.innerHTML=`@keyframes fall{to{transform:translateY(110vh) rotate(360deg);opacity:0;}}`;
+    document.head.appendChild(style);
+  </script>
+</body>
+</html>
+
+
+
+
+
+
