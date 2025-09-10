@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>🌱 Maestros de la Nutrición</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to bottom right, #4CAF50, #2196F3);
+      color: #fff;
+      text-align: center;
+    }
+    header {
+      background: rgba(0,0,0,0.3);
+      padding: 15px;
+      font-size: 1.5em;
+      font-weight: bold;
+    }
+    .container { margin: 20px; }
+    .btn {
+      display: block;
+      width: 90%;
+      max-width: 400px;
+      margin: 10px auto;
+      padding: 15px;
+      font-size: 1.1em;
+      border: none;
+      border-radius: 12px;
+      background: #FFD54F;
+      color: #000;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .btn:hover { background: #FFB300; }
+    .hidden { display: none; }
+    .concept-box {
+      background: rgba(255,255,255,0.2);
+      padding: 20px;
+      border-radius: 15px;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    .question-box {
+      background: rgba(255,255,255,0.15);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .feedback {
+      font-weight: bold;
+      margin: 15px 0;
+      font-size: 1.1em;
+    }
+    .correct { color: #C8E6C9; }
+    .incorrect { color: #FFCDD2; }
+    .menu-btn {
+      margin-top: 20px;
+      background: #90CAF9;
+    }
+    .score-box {
+      background: rgba(0,0,0,0.4);
+      padding: 15px;
+      border-radius: 12px;
+      margin: 15px auto;
+      max-width: 400px;
+    }
+    /* Layout especial nivel 3 */
+    .case-layout {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+    }
+    .case-text {
+      flex: 1;
+      min-width: 250px;
+      background: rgba(255,255,255,0.2);
+      padding: 15px;
+      border-radius: 12px;
+      text-align: left;
+    }
+    .case-options {
+      flex: 1;
+      min-width: 250px;
+    }
+    @media (max-width:600px) {
+      .btn { font-size: 1em; padding: 12px; }
+      header { font-size: 1.2em; }
+      .case-layout { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>🌱 Maestros de la Nutrición</header>
+
+  <!-- Menú principal -->
+  <div id="menu" class="container">
+    <h2>Elige un nivel</h2>
+    <button class="btn" onclick="showConcept(1)">Nivel 1: Autótrofa vs Heterótrofa</button>
+    <button class="btn" onclick="showConcept(2)">Nivel 2: Subtipos de nutrición</button>
+    <button class="btn" onclick="showConcept(3)">Nivel 3: Casos reales</button>
+  </div>
+
+  <!-- Pantalla de concepto -->
+  <div id="concept" class="container hidden">
+    <div id="conceptText" class="concept-box"></div>
+    <button class="btn" onclick="startGame()">👉 Comenzar</button>
+    <button class="btn menu-btn" onclick="goMenu()">🔙 Volver al menú</button>
+  </div>
+
+  <!-- Juego -->
+  <div id="game" class="container hidden">
+    <div class="score-box">
+      Pregunta <span id="qNum">0</span>/10 | Nota: <span id="score">0</span>/20
+    </div>
+    <div id="questionArea" class="question-box"></div>
+    <div id="feedback" class="feedback"></div>
+    <button class="btn menu-btn" onclick="goMenu()">🔙 Volver al menú</button>
+  </div>
+
+  <script>
+    let currentLevel = null;
+    let currentQuestion = 0;
+    let correctAnswers = 0;
+
+    // 💡 Conceptos previos de cada nivel
+    const concepts = {
+      1: `
+        <h2>🌱 Nivel 1: Autótrofa vs Heterótrofa</h2>
+        <p>Los seres vivos pueden nutrirse de distintas formas:</p>
+        <ul>
+          <li>🌞 <b>Autótrofos</b>: producen su propio alimento (plantas, algas, bacterias).</li>
+          <li>🍖 <b>Heterótrofos</b>: dependen de otros organismos (humanos, animales, hongos).</li>
+        </ul>
+      `,
+      2: `
+        <h2>🔬 Nivel 2: Subtipos de nutrición</h2>
+        <ul>
+          <li>🌞 Fotosintética: usa luz solar (plantas).</li>
+          <li>⚗️ Quimiosintética: usa compuestos químicos (bacterias).</li>
+          <li>🍽️ Holozoica: ingiere y digiere alimentos (humanos, animales).</li>
+          <li>🍄 Saprófita: descompone materia muerta (hongos).</li>
+          <li>🦟 Parásita: vive a costa de otro (mosquito, lombrices).</li>
+        </ul>
+      `,
+      3: `
+        <h2>🧑‍⚕️ Nivel 3: Casos reales</h2>
+        <p>Aquí analizarás <b>situaciones más amplias</b>. Lee el caso con símbolos y selecciona el tipo de nutrición correcta.</p>
+      `
+    };
+
+    // 📚 Bancos de preguntas (10 por nivel)
+    const levels = {
+      1: [
+        { q: "🌱 Una planta de frijol realiza fotosíntesis. ¿Qué tipo de nutrición es?",
+          options: ["Autótrofa", "Heterótrofa"], correct: 0,
+          exp: "Produce su propio alimento con la luz solar." },
+        { q: "🍖 Los humanos obtenemos energía de los alimentos. ¿Qué tipo de nutrición es?",
+          options: ["Autótrofa", "Heterótrofa"], correct: 1,
+          exp: "Dependemos de otros seres vivos." },
+        { q: "🌊 Las algas verdes realizan fotosíntesis. Son...",
+          options: ["Autótrofas", "Heterótrofas"], correct: 0,
+          exp: "Son organismos autótrofos fotosintéticos." },
+        { q: "🍄 Un hongo que vive en un tronco muerto es...",
+          options: ["Autótrofo", "Heterótrofo"], correct: 1,
+          exp: "Depende de materia orgánica externa." },
+        { q: "🐟 Un pez se alimenta de insectos acuáticos. Es...",
+          options: ["Autótrofo", "Heterótrofo"], correct: 1,
+          exp: "El pez depende de otros organismos." },
+        { q: "🌞 Una cianobacteria que realiza fotosíntesis es...",
+          options: ["Autótrofa", "Heterótrofa"], correct: 0,
+          exp: "Produce su alimento: autótrofa." },
+        { q: "🐄 Una vaca que come pasto es...",
+          options: ["Autótrofa", "Heterótrofa"], correct: 1,
+          exp: "Es heterótrofa holozoica." },
+        { q: "🌸 Una rosa que fabrica azúcares con la luz solar es...",
+          options: ["Autótrofa", "Heterótrofa"], correct: 0,
+          exp: "Las plantas son autótrofas." },
+        { q: "🦁 Un león que caza cebras es...",
+          options: ["Autótrofa", "Heterótrofa"], correct: 1,
+          exp: "Es un carnívoro heterótrofo." },
+        { q: "🦠 Una bacteria que depende de otros organismos es...",
+          options: ["Autótrofa", "Heterótrofa"], correct: 1,
+          exp: "Es heterótrofa." },
+        { q: "🐱 Un gato doméstico que come concentrado balanceado es...",
+          options: ["Autótrofa", "Heterótrofo"], correct: 1,
+          exp: "Necesita carne o alimento balanceado." },
+        { q: "🌾 El arroz que fabrica glucosa a partir de la fotosíntesis es...", 
+          options: ["Autótrofa", "Heterótrofa"], 
+          correct: 0, 
+          exp: "Las plantas verdes son autótrofas fotosintéticas." },
+        { q: "🦟 Un mosquito que se alimenta de sangre es...", 
+          options: ["Autótrofa", "Heterótrofa"], 
+          correct: 1, 
+          exp: "Es un heterótrofo parásito." },
+        { q: "🍄 Un champiñón que absorbe nutrientes de un tronco caído es...", 
+          options: ["Autótrofa", "Heterótrofa"], 
+          correct: 1, 
+          exp: "Los hongos son heterótrofos saprófitos." },
+        { q: "🦠 Una cianobacteria que realiza fotosíntesis es...", 
+          options: ["Autótrofa", "Heterótrofa"], 
+          correct: 0, 
+          exp: "Las cianobacterias son autótrofas fotosintéticas." },
+        { q: "🐝 Una abeja que consume néctar de flores es...", 
+          options: ["Autótrofa", "Heterótrofa"], 
+          correct: 1, 
+          exp: "La abeja es un consumidor heterótrofo." },
+        { q: "🦌 Un venado que se alimenta de hierbas es...", 
+          options: ["Autótrofa", "Heterótrofa"], 
+          correct: 1, 
+          exp: "Es un consumidor primario heterótrofo." },
+        { q: "🧫 Una bacteria del suelo que transforma amoníaco en nitratos (quimiosíntesis) es...", 
+          options: ["Autótrofa", "Heterótrofa"], 
+          correct: 0, 
+          exp: "Es un autótrofo quimiosintético." }
+
+      ],
+      2: [
+        { q: "🌞 Una planta de maíz transforma luz solar. Subtipo:",
+          options: ["Fotosintética", "Holozoica", "Saprófita"], correct: 0,
+          exp: "Es fotosintética." },
+        { q: "⚗️ Una bacteria obtiene energía del azufre. Subtipo:",
+          options: ["Quimiosintética", "Parásita", "Saprófita"], correct: 0,
+          exp: "Es quimiosintética." },
+        { q: "🍄 Un hongo obtiene nutrientes de materia muerta. Subtipo:",
+          options: ["Saprófita", "Parásita", "Fotosintética"], correct: 0,
+          exp: "Es saprófito." },
+        { q: "🦟 Un mosquito chupa sangre. Subtipo:",
+          options: ["Parásita", "Holozoica", "Autótrofa"], correct: 0,
+          exp: "Es parásito." },
+        { q: "👨‍🦱 El ser humano ingiere y digiere alimentos. Subtipo:",
+          options: ["Holozoica", "Saprófita", "Fotosintética"], correct: 0,
+          exp: "Es holozoico." },
+        { q: "🪱 Una lombriz de tierra come restos orgánicos. Subtipo:",
+          options: ["Saprófita", "Parásita", "Quimiosintética"], correct: 0,
+          exp: "Es saprófita." },
+        { q: "🦅 Un águila caza presas y las digiere. Subtipo:",
+          options: ["Holozoica", "Fotosintética", "Saprófita"], correct: 0,
+          exp: "Es holozoica." },
+        { q: "🌿 Una orquídea hace fotosíntesis. Subtipo:",
+          options: ["Fotosintética", "Saprófita", "Parásita"], correct: 0,
+          exp: "Es fotosintética." },
+        { q: "🦠 Bacterias que usan compuestos químicos del nitrógeno. Subtipo:",
+          options: ["Quimiosintética", "Holozoica", "Saprófita"], correct: 0,
+          exp: "Es quimiosintética." },
+        { q: "🐛 Una oruga que mastica hojas. Subtipo:",
+          options: ["Holozoica", "Parásita", "Saprófita"], correct: 0,
+          exp: "Es holozoica." }
+      ],
+      3: [
+        { case: "👧 María come frutas y carnes que su cuerpo digiere. ¿Qué nutrición tiene?",
+          options: ["Holozoica", "Saprófita", "Parásita"], correct: 0,
+          exp: "La nutrición humana es holozoica." },
+        { case: "🍄 Un hongo crece sobre un tronco en descomposición. ¿Qué nutrición tiene?",
+          options: ["Saprófita", "Fotosintética", "Quimiosintética"], correct: 0,
+          exp: "Los hongos son saprófitos." },
+        { case: "🦠 Una bacteria obtiene energía del azufre del suelo. ¿Qué nutrición tiene?",
+          options: ["Quimiosintética", "Parásita", "Holozoica"], correct: 0,
+          exp: "Es quimiosintética." },
+        { case: "🦟 Un mosquito se alimenta de sangre. ¿Qué nutrición tiene?",
+          options: ["Parásita", "Saprófita", "Fotosintética"], correct: 0,
+          exp: "Es parásita." },
+        { case: "🐄 Una vaca come pasto y lo digiere. ¿Qué nutrición tiene?",
+          options: ["Holozoica", "Saprófita", "Fotosintética"], correct: 0,
+          exp: "Es holozoica." },
+        { case: "🪱 Una lombriz se alimenta de materia orgánica del suelo. ¿Qué nutrición tiene?",
+          options: ["Saprófita", "Holozoica", "Quimiosintética"], correct: 0,
+          exp: "Es saprófita." },
+        { case: "🌻 Un girasol produce su alimento con la luz solar. ¿Qué nutrición tiene?",
+          options: ["Fotosintética", "Holozoica", "Saprófita"], correct: 0,
+          exp: "Es fotosintética." },
+        { case: "🦁 Un león caza cebras y las digiere. ¿Qué nutrición tiene?",
+          options: ["Holozoica", "Saprófita", "Parásita"], correct: 0,
+          exp: "Es holozoica." },
+        { case: "🧫 Una bacteria obtiene energía de compuestos de hierro. ¿Qué nutrición tiene?",
+          options: ["Quimiosintética", "Saprófita", "Fotosintética"], correct: 0,
+          exp: "Es quimiosintética." },
+        { case: "🪰 Una mosca que se alimenta de desechos orgánicos. ¿Qué nutrición tiene?",
+          options: ["Saprófita", "Holozoica", "Parásita"], correct: 0,
+          exp: "Es saprófita." }
+      ]
+    };
+
+    function showConcept(level) {
+      currentLevel = level;
+      document.getElementById("menu").classList.add("hidden");
+      document.getElementById("concept").classList.remove("hidden");
+      document.getElementById("conceptText").innerHTML = concepts[level];
+    }
+
+    function startGame() {
+      currentQuestion = 0;
+      correctAnswers = 0;
+      document.getElementById("concept").classList.add("hidden");
+      document.getElementById("game").classList.remove("hidden");
+      updateScore();
+      nextQuestion();
+    }
+
+    function goMenu() {
+      document.getElementById("menu").classList.remove("hidden");
+      document.getElementById("concept").classList.add("hidden");
+      document.getElementById("game").classList.add("hidden");
+      document.getElementById("feedback").innerHTML = "";
+    }
+
+    function updateScore() {
+      document.getElementById("qNum").innerText = currentQuestion;
+      document.getElementById("score").innerText = Math.round((correctAnswers/10)*20);
+    }
+
+    function nextQuestion() {
+      const bank = levels[currentLevel];
+      if (currentQuestion >= 10) {
+        document.getElementById("questionArea").innerHTML =
+          `<h2>🎉 Fin de la ronda</h2>
+           <p>Tu nota es: <b>${Math.round((correctAnswers/10)*20)}/20</b></p>
+           <p>¿Quieres volver a intentarlo?</p>
+           <button class="btn" onclick="startGame()">🔄 Jugar otra vez</button>`;
+        return;
+      }
+
+      const q = bank[Math.floor(Math.random() * bank.length)];
+      currentQuestion++;
+      updateScore();
+      const qArea = document.getElementById("questionArea");
+      const fb = document.getElementById("feedback");
+      fb.innerHTML = "";
+
+      if (currentLevel === 3) {
+        qArea.innerHTML = `
+          <div class="case-layout">
+            <div class="case-text"><p>📝 ${q.case}</p></div>
+            <div class="case-options" id="options"></div>
+          </div>
+        `;
+      } else {
+        qArea.innerHTML = `<h2>${q.q}</h2><div id="options"></div>`;
+      }
+
+      const optionsDiv = document.getElementById("options");
+      q.options.forEach((opt, i) => {
+        const btn = document.createElement("button");
+        btn.className = "btn";
+        btn.innerText = opt;
+        btn.onclick = () => {
+          if (i === q.correct) {
+            correctAnswers++;
+            fb.innerHTML = `<span class="correct">✅ Correcto: ${q.exp}</span>`;
+          } else {
+            fb.innerHTML = `<span class="incorrect">❌ Incorrecto: ${q.exp}</span>`;
+          }
+          updateScore();
+          setTimeout(nextQuestion, 2000);
+        };
+        optionsDiv.appendChild(btn);
+      });
+    }
+  </script>
+
+</body>
+</html>
+
+
+
+
+
